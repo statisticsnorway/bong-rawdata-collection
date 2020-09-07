@@ -1,6 +1,7 @@
 package no.ssb.dc.bong.commons.lmdb;
 
 import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.bong.commons.rawdata.BufferedWriter;
 import no.ssb.dc.bong.commons.rawdata.RepositoryKey;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
@@ -14,7 +15,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiConsumer;
 
-public class LmdbBufferedWriter implements AutoCloseable {
+public class LmdbBufferedWriter implements BufferedWriter {
 
     private final Queue<Map.Entry<ByteBuffer, ByteBuffer>> bufferQueue;
     private final DirectByteBufferPool keyPool;
@@ -33,6 +34,7 @@ public class LmdbBufferedWriter implements AutoCloseable {
         this.dbi = lmdbEnvironment.open();
     }
 
+    @Override
     public void commitQueue() {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnWrite()) {
             Map.Entry<ByteBuffer, ByteBuffer> buffer;
@@ -48,7 +50,8 @@ public class LmdbBufferedWriter implements AutoCloseable {
         }
     }
 
-    public <U extends RepositoryKey> void writeRecord(U repositoryKey, String line) {
+    @Override
+    public <K extends RepositoryKey> void writeRecord(K repositoryKey, String line) {
         ByteBuffer keyBuffer = keyPool.acquire();
         repositoryKey.toByteBuffer(keyBuffer);
         ByteBuffer contentBuffer = valuePool.acquire();
@@ -65,13 +68,14 @@ public class LmdbBufferedWriter implements AutoCloseable {
         }
     }
 
-    public <U extends RepositoryKey> void readRecord(Class<U> keyClass, BiConsumer<Map.Entry<U, String>, Boolean> visit) {
+    @Override
+    public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> visit) {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
             Iterator<CursorIterable.KeyVal<ByteBuffer>> it = dbi.iterate(txn).iterator();
             while (it.hasNext()) {
                 CursorIterable.KeyVal<ByteBuffer> next = it.next();
                 ByteBuffer keyBuffer = next.key();
-                U repositoryKey = RepositoryKey.fromByteBuffer(keyClass, keyBuffer);
+                K repositoryKey = RepositoryKey.fromByteBuffer(keyClass, keyBuffer);
                 ByteBuffer valueBuffer = next.val();
                 int contentLength = valueBuffer.getInt();
                 byte[] contentBytes = new byte[contentLength];

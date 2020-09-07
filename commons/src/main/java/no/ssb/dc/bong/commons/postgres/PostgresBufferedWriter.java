@@ -2,6 +2,7 @@ package no.ssb.dc.bong.commons.postgres;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.bong.commons.lmdb.DirectByteBufferPool;
+import no.ssb.dc.bong.commons.rawdata.BufferedWriter;
 import no.ssb.dc.bong.commons.rawdata.FixedThreadPool;
 import no.ssb.dc.bong.commons.rawdata.RepositoryKey;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
-public class PostgresBufferedWriter implements AutoCloseable {
+public class PostgresBufferedWriter implements BufferedWriter {
 
     final FixedThreadPool threadPool;
     final Queue<Map.Entry<ByteBuffer, ByteBuffer>> bufferQueue;
@@ -50,6 +51,7 @@ public class PostgresBufferedWriter implements AutoCloseable {
         }
     }
 
+    @Override
     public void commitQueue() {
         createTopicIfNotExists(topic, true);
         try (PostgresTransaction transaction = transactionFactory.createTransaction(false)) {
@@ -77,6 +79,7 @@ public class PostgresBufferedWriter implements AutoCloseable {
         }
     }
 
+    @Override
     public <K extends RepositoryKey> void writeRecord(K key, String value) {
         ByteBuffer keyBuffer = keyPool.acquire();
         key.toByteBuffer(keyBuffer);
@@ -94,6 +97,7 @@ public class PostgresBufferedWriter implements AutoCloseable {
         }
     }
 
+    @Override
     public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> visit) {
         createTopicIfNotExists(topic, false);
         try (PostgresTransaction transaction = transactionFactory.createTransaction(false)) {
@@ -106,7 +110,7 @@ public class PostgresBufferedWriter implements AutoCloseable {
                     byte[] value = rs.getBytes(2);
                     K repositoryKey = RepositoryKey.fromByteBuffer(keyClass, ByteBuffer.wrap(key));
                     String content = new String(value, StandardCharsets.UTF_8);
-                    visit.accept(Map.entry(repositoryKey, content), next = rs.next());
+                    visit.accept(Map.entry(repositoryKey, content), next = rs.next()); // next
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

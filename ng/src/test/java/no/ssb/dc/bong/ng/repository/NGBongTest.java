@@ -57,21 +57,21 @@ class NGBongTest {
     @Test
     void buildDatabase() {
         NGLmdbBongRepository repository = new NGLmdbBongRepository(sourceLmdbConfiguration, targetConfiguration);
-        repository.buildDatabase();
+        repository.prepare();
     }
 
     @Disabled
     @Test
     void produceRawdata() {
         NGLmdbBongRepository repository = new NGLmdbBongRepository(sourceLmdbConfiguration, targetConfiguration);
-        repository.produceRawdata();
+        repository.produce();
     }
 
     @Disabled
     @Test
     void buildPostgresDatabase() {
         NGPostgresBongRepository repository = new NGPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.buildDatabase();
+        repository.prepare();
     }
 
     @Disabled
@@ -79,7 +79,7 @@ class NGBongTest {
     void readDatabase() {
         AtomicLong counter = new AtomicLong();
         NGPostgresBongRepository repository = new NGPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.readDatabase((Map<NGBongKey, String> bong) -> {
+        repository.consume((Map<NGBongKey, String> bong) -> {
             for (Map.Entry<NGBongKey, String> entry : bong.entrySet()) {
                 LOG.trace("{}: {}", "", entry.getValue());
                 if (counter.incrementAndGet() % 10000 == 0) {
@@ -94,7 +94,7 @@ class NGBongTest {
     @Test
     void producePostgresRawdata() {
         NGPostgresBongRepository repository = new NGPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.produceRawdata();
+        repository.produce();
     }
 
     @Disabled

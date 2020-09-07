@@ -5,40 +5,45 @@ import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.bong.commons.config.GCSConfiguration;
 import no.ssb.dc.bong.commons.config.SourceLmdbConfiguration;
 import no.ssb.dc.bong.commons.config.SourcePostgresConfiguration;
+import no.ssb.dc.bong.coop.CoopPostgresBongRepository;
 import no.ssb.dc.bong.ng.ping.RawdataGCSTestWrite;
 import no.ssb.dc.bong.ng.repository.NGLmdbBongRepository;
 import no.ssb.dc.bong.ng.repository.NGPostgresBongRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Application {
+/**
+ * The DynamicConfiguration captures environment variables set to docker and executes a Command.
+ * <p>
+ * usage:
+ * docker run -it --rm -e BONG_ping.test= bong-collection:dev
+ */
+public class Application implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
-    final DynamicConfiguration configuration;
-    final AtomicBoolean success = new AtomicBoolean();
+
+    private static final Collection<Command> commands = List.of(
+            new Command("test-gcs-write", null, () -> {
+                LOG.info("Copy dummy rawdata to bucket (ping test).");
+                new RawdataGCSTestWrite().produceRawdataToGCS(new GCSConfiguration());
+            }),
+            new Command("build-database", "ng-lmdb", () -> new NGLmdbBongRepository(new SourceLmdbConfiguration(), new GCSConfiguration()).prepare()),
+            new Command("produce-rawdata", "ng-lmdb", () -> new NGLmdbBongRepository(new SourceLmdbConfiguration(), new GCSConfiguration()).produce()),
+            new Command("build-database", "ng-postgres", () -> new NGPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).prepare()),
+            new Command("produce-rawdata", "ng-postgres", () -> new NGPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).produce()),
+            new Command("build-database", "coop-postgres", () -> new CoopPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).prepare()),
+            new Command("produce-rawdata", "coop-postgres", () -> new CoopPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).produce())
+    );
+
+    private final DynamicConfiguration configuration;
+    private final AtomicBoolean completed = new AtomicBoolean();
 
     private Application(DynamicConfiguration configuration) {
         this.configuration = configuration;
-
-        if (isAction("ping.test")) {
-            doPingTest();
-
-        } else if (isAction("buildDatabase") && isTarget("ng.lmdb")) {
-            buildNGLmdbDatabase();
-
-        } else if (isAction("produceRawdata") && isTarget("ng.lmdb")) {
-            produceNGLmdbRatadata();
-
-        } else if (isAction("buildDatabase") && isTarget("ng.postgres")) {
-            buildNGPostgresDatabase();
-
-        } else if (isAction("produceRawdata") && isTarget("ng.postgres")) {
-            produceNGPostgresRatadata();
-        }
-
-        success.set(true);
     }
 
     boolean isAction(String action) {
@@ -49,88 +54,80 @@ public class Application {
         return configuration.evaluateToString("target") != null && configuration.evaluateToString("target").equals(target);
     }
 
-    void doPingTest() {
-        LOG.info("Copy dummy rawdata to bucket (ping test).");
-        GCSConfiguration gcsConfiguration = new GCSConfiguration();
-        RawdataGCSTestWrite rawdataGCSTestWrite = new RawdataGCSTestWrite();
-        rawdataGCSTestWrite.produceRawdataToGCS(gcsConfiguration);
+    @Override
+    public void run() {
+        boolean valid = false;
+
+        for (Command command : commands) {
+            if ((isAction(command.action) && command.target == null) || (isAction(command.action) && isTarget(command.target))) {
+                valid = true;
+                LOG.info("Execute action: {} and target: {}", command.action, command.target);
+                command.callback.execute();
+                completed.set(true);
+                break;
+            }
+        }
+
+        if (!valid) {
+            LOG.warn("No action found!");
+        }
     }
 
-    void buildNGLmdbDatabase() {
-        NGLmdbBongRepository repository = new NGLmdbBongRepository(new SourceLmdbConfiguration(), new GCSConfiguration());
-        repository.buildDatabase();
-    }
-
-    void produceNGLmdbRatadata() {
-        NGLmdbBongRepository repository = new NGLmdbBongRepository(new SourceLmdbConfiguration(), new GCSConfiguration());
-        repository.produceRawdata();
-    }
-
-    void buildNGPostgresDatabase() {
-        NGPostgresBongRepository repository = new NGPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration());
-        repository.buildDatabase();
-    }
-
-    void produceNGPostgresRatadata() {
-        NGPostgresBongRepository repository = new NGPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration());
-        repository.produceRawdata();
-    }
-
-    public static Application run(DynamicConfiguration configuration) {
+    static Application create(DynamicConfiguration configuration) {
         return new Application(configuration);
     }
 
-    /*
-        usage:
-            docker run -it --rm -e BONG_ping.test= bong-collection:dev
-     */
+    @FunctionalInterface
+    interface Callback {
+        void execute();
+    }
 
-    public static class CLI implements Runnable {
-        final DynamicConfiguration configuration;
-        final AtomicBoolean success = new AtomicBoolean();
+    static class Command {
+        final String action;
+        final String target;
+        final Callback callback;
 
-        public CLI(DynamicConfiguration configuration) {
-            this.configuration = configuration;
-        }
-
-        @Override
-        public void run() {
-            Application app = Application.run(configuration);
-            success.set(app.success.get());
+        Command(String action, String target, Callback callback) {
+            this.action = action;
+            this.target = target;
+            this.callback = callback;
         }
     }
 
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
 
-        StoreBasedDynamicConfiguration.Builder configurationBuilder = new StoreBasedDynamicConfiguration.Builder()
+        DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
                 .environment("BONG_")
-                .systemProperties();
+                .systemProperties()
+                .build();
 
-        CLI cli = new CLI(configurationBuilder.build());
-        Thread application = new Thread(cli);
+
+        Application application = Application.create(configuration);
+        Thread thread = new Thread(application);
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (!cli.success.get()) {
+                if (!application.completed.get()) {
                     LOG.warn("ShutdownHook triggered..");
                 }
-                application.interrupt();
+                thread.interrupt();
             }));
 
-            application.start();
+            thread.start();
 
             long time = System.currentTimeMillis() - now;
             LOG.info("Client started in {}ms..", time);
 
             // wait for termination signal
             try {
-                application.join();
+                thread.join();
             } catch (InterruptedException e) {
+                // suppress
             }
         } finally {
-            LOG.info("Done!");
+            long time = System.currentTimeMillis() - now;
+            LOG.info("Completed in {}ms!", time);
         }
     }
-
 }

@@ -26,7 +26,7 @@ public class LocalFileSystemConfiguration extends TargetConfiguration {
 
     @Override
     public String name() {
-        return "target-ng-filesystem";
+        return "target-filesystem";
     }
 
     @Override

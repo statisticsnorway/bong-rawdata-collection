@@ -60,7 +60,7 @@ public class PostgresDataSource {
     }
 
     public static void dropOrCreateDatabase(TransactionFactory transactionFactory, String topic) {
-        dropOrCreateDatabase(transactionFactory, topic, "no/ssb/dc/bong/commons/psql/init/init-db.sql");
+        dropOrCreateDatabase(transactionFactory, topic, "no/ssb/dc/bong/commons/postgres/init/init-db.sql");
     }
 
     static void dropOrCreateDatabase(TransactionFactory transactionFactory, String topic, String sqlResource) {

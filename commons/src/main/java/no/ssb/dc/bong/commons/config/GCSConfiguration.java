@@ -28,7 +28,7 @@ public class GCSConfiguration extends TargetConfiguration {
 
     @Override
     public String name() {
-        return "target-ng-gcs";
+        return "target-gcs";
     }
 
     @Override

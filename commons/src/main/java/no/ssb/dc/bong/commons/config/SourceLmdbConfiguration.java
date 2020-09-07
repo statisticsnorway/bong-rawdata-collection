@@ -17,8 +17,7 @@ public class SourceLmdbConfiguration extends AbstractConfiguration {
                         "lmdb.sizeInMb", "500",
                         "queue.poolSize", "25000", // flush buffer on threshold
                         "queue.keyBufferSize", "511",
-                        "queue.valueBufferSize", "2048",
-                        "csv.dateFormat", "MM/dd/yyyy HH:mm:ss"
+                        "queue.valueBufferSize", "2048"
                 ),
                 overrideKeyValuePairs
         );
@@ -26,7 +25,7 @@ public class SourceLmdbConfiguration extends AbstractConfiguration {
 
     @Override
     public String name() {
-        return "source-ng";
+        return "source-lmdb";
     }
 
     @Override

@@ -23,7 +23,7 @@ public class EnvConfigurationTest {
         return (Map) m.get(unmodifiableEnvironment);
     }
 
-    // --add-opens java.base/java.lang=bong.ng --add-opens java.base/java.util=bong.ng
+    // --add-opens java.base/java.lang=bong.commons --add-opens java.base/java.util=bong.commons
     @Disabled
     @Test
     void thatSourceConfigurationReadsPrefixOverride() throws Exception {
@@ -46,7 +46,7 @@ public class EnvConfigurationTest {
         assertEquals("lmdbpath", configuration.asDynamicConfiguration().evaluateToString("lmdb.path"));
     }
 
-    // --add-opens java.base/java.lang=bong.ng --add-opens java.base/java.util=bong.ng
+    // --add-opens java.base/java.lang=bong.commons --add-opens java.base/java.util=bong.commons
     @Disabled
     @Test
     void thatTargetLocalFileSystemConfigurationReadsPrefixOverride() throws Exception {
@@ -66,7 +66,7 @@ public class EnvConfigurationTest {
         assertEquals("storageFolder", configuration.asDynamicConfiguration().evaluateToString("filesystem.storage-folder"));
     }
 
-    // --add-opens java.base/java.lang=bong.ng --add-opens java.base/java.util=bong.ng
+    // --add-opens java.base/java.lang=bong.commons --add-opens java.base/java.util=bong.commons
     @Disabled
     @Test
     void thatTargetGCSConfigurationReadsPrefixOverride() throws Exception {

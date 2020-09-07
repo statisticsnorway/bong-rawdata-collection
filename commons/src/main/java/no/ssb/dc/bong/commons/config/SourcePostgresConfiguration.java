@@ -22,8 +22,7 @@ public class SourcePostgresConfiguration extends AbstractConfiguration {
                         "postgres.driver.database", "bong",
                         "queue.poolSize", "25000", // flush buffer on threshold
                         "queue.keyBufferSize", "511",
-                        "queue.valueBufferSize", "2048",
-                        "csv.dateFormat", "MM/dd/yyyy HH:mm:ss"
+                        "queue.valueBufferSize", "2048"
                 ),
                 overrideKeyValuePairs
         );
@@ -38,7 +37,7 @@ public class SourcePostgresConfiguration extends AbstractConfiguration {
 
     @Override
     public String name() {
-        return "psql";
+        return "source-postgres";
     }
 
     @Override
