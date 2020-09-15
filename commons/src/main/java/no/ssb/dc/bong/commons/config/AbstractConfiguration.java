@@ -19,7 +19,10 @@ abstract public class AbstractConfiguration implements Configuration {
         throw new UnsupportedOperationException("Constructor MUST be implemented!");
     }
 
-    protected AbstractConfiguration(String prefix, Map<String, String> defaultKeyValuePairs, Map<String, String> overrideKeyValuePairs) {
+    protected AbstractConfiguration(String prefix,
+                                    Map<String, String> defaultKeyValuePairs,
+                                    Map<String, String> overrideKeyValuePairs) {
+
         Objects.requireNonNull(prefix);
         Objects.requireNonNull(defaultKeyValuePairs);
 

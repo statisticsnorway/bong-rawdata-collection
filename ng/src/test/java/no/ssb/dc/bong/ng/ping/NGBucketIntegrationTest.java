@@ -25,7 +25,9 @@ public class NGBucketIntegrationTest {
                 "target.rawdata.topic", "bong-ng-test",
                 "target.gcs.bucket-name", "dapla-rawdata-bong-bucket-dapla",
                 "target.gcs.service-account.key-file", "/Users/oranheim/bin/ssb-team-dapla-rawdata-bong-dc28ff0c8faa.json",
-                "target.local-temp-folder", "target/avro/temp"
+                "target.local-temp-folder", "target/avro/temp",
+                "rawdata.encryptionKey", "PASSWORD",
+                "rawdata.encryptionSalt", "SALT"
         ));
         RawdataGCSTestWrite rawdataGCSTestWrite = new RawdataGCSTestWrite();
         rawdataGCSTestWrite.produceRawdataToGCS(gcsConfiguration);

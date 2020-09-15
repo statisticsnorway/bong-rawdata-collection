@@ -23,8 +23,9 @@ module bong.commons {
 
     exports no.ssb.dc.bong.commons.config;
     exports no.ssb.dc.bong.commons.csv;
-    exports no.ssb.dc.bong.commons.lmdb;
-    exports no.ssb.dc.bong.commons.postgres;
-    exports no.ssb.dc.bong.commons.rawdata;
+    exports no.ssb.dc.bong.commons.jdbc;
+    exports no.ssb.dc.bong.commons.source;
+    exports no.ssb.dc.bong.commons.target;
+    exports no.ssb.dc.bong.commons.utils;
 
 }

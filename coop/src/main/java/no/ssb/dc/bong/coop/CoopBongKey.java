@@ -1,6 +1,6 @@
 package no.ssb.dc.bong.coop;
 
-import no.ssb.dc.bong.commons.rawdata.RepositoryKey;
+import no.ssb.dc.bong.commons.source.RepositoryKey;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

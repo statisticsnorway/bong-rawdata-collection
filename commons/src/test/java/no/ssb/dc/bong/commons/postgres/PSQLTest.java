@@ -2,6 +2,10 @@ package no.ssb.dc.bong.commons.postgres;
 
 import com.zaxxer.hikari.HikariDataSource;
 import no.ssb.dc.bong.commons.config.SourcePostgresConfiguration;
+import no.ssb.dc.bong.commons.jdbc.PostgresDataSource;
+import no.ssb.dc.bong.commons.jdbc.PostgresTransactionFactory;
+import no.ssb.dc.bong.commons.jdbc.Transaction;
+import no.ssb.dc.bong.commons.jdbc.TransactionFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;

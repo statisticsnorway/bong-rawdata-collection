@@ -3,7 +3,8 @@ package no.ssb.dc.bong.ng.repository;
 import no.ssb.dc.bong.commons.config.LocalFileSystemConfiguration;
 import no.ssb.dc.bong.commons.config.SourceLmdbConfiguration;
 import no.ssb.dc.bong.commons.config.SourcePostgresConfiguration;
-import no.ssb.dc.bong.commons.rawdata.BufferedRawdataProducer;
+import no.ssb.dc.bong.commons.source.PostgresCsvRepository;
+import no.ssb.dc.bong.commons.target.BufferedRawdataProducer;
 import no.ssb.rawdata.api.RawdataClient;
 import no.ssb.rawdata.api.RawdataClientInitializer;
 import no.ssb.rawdata.api.RawdataConsumer;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -56,45 +58,59 @@ class NGBongTest {
     @Disabled
     @Test
     void buildDatabase() {
-        NGLmdbBongRepository repository = new NGLmdbBongRepository(sourceLmdbConfiguration, targetConfiguration);
-        repository.prepare();
+        try (var worker = new NGLmdbBongWorker(sourceLmdbConfiguration, targetConfiguration)) {
+            worker.prepare();
+        }
     }
 
     @Disabled
     @Test
     void produceRawdata() {
-        NGLmdbBongRepository repository = new NGLmdbBongRepository(sourceLmdbConfiguration, targetConfiguration);
-        repository.produce();
+        try (var worker = new NGLmdbBongWorker(sourceLmdbConfiguration, targetConfiguration)) {
+            worker.produce();
+        }
     }
 
     @Disabled
     @Test
     void buildPostgresDatabase() {
-        NGPostgresBongRepository repository = new NGPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.prepare();
+        try (var worker = new NGPostgresBongWorker(sourcePostgresConfiguration, targetConfiguration)) {
+            worker.prepare();
+        }
     }
 
     @Disabled
     @Test
     void readDatabase() {
         AtomicLong counter = new AtomicLong();
-        NGPostgresBongRepository repository = new NGPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.consume((Map<NGBongKey, String> bong) -> {
-            for (Map.Entry<NGBongKey, String> entry : bong.entrySet()) {
-                LOG.trace("{}: {}", "", entry.getValue());
-                if (counter.incrementAndGet() % 10000 == 0) {
-                    LOG.trace("{}", counter.get());
+        try (var repository = new PostgresCsvRepository<>(
+                sourcePostgresConfiguration,
+                targetConfiguration,
+                NGBongKey.class,
+                "\\|",
+                StandardCharsets.ISO_8859_1,
+                NGPostgresBongWorker.csvHeader(),
+                NGBongKey::isPartOfBong)) {
+
+            repository.consume((Map<NGBongKey, String> bong) -> {
+                for (Map.Entry<NGBongKey, String> entry : bong.entrySet()) {
+                    LOG.trace("{}: {}", entry.getKey().toPosition(), entry.getValue());
+                    if (counter.incrementAndGet() % 10000 == 0) {
+                        LOG.trace("{}", counter.get());
+                    }
                 }
-            }
-        });
+            });
+        }
+
         LOG.trace("{}", counter.get());
     }
 
     @Disabled
     @Test
     void producePostgresRawdata() {
-        NGPostgresBongRepository repository = new NGPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.produce();
+        try (var worker = new NGPostgresBongWorker(sourcePostgresConfiguration, targetConfiguration)) {
+            worker.produce();
+        }
     }
 
     @Disabled
@@ -118,7 +134,7 @@ class NGBongTest {
         try (RawdataClient client = ProviderConfigurator.configure(targetConfiguration.asMap(), "filesystem", RawdataClientInitializer.class)) {
             String targetTopic = targetConfiguration.asDynamicConfiguration().evaluateToString("rawdata.topic");
             try (RawdataConsumer consumer = client.consumer(targetTopic)) {
-                try (BufferedRawdataProducer bufferedProducer = new BufferedRawdataProducer(1000, client.producer(targetTopic))) {
+                try (BufferedRawdataProducer bufferedProducer = new BufferedRawdataProducer(targetConfiguration.asDynamicConfiguration(), 1000, client.producer(targetTopic))) {
                     RawdataMessage message;
                     while ((message = consumer.receive(15, TimeUnit.SECONDS)) != null) {
                         bufferedProducer.produce(message);

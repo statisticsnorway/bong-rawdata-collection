@@ -38,14 +38,16 @@ class CoopBongTest {
     @Disabled
     @Test
     void buildDatabase() {
-        CoopPostgresBongRepository repository = new CoopPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.prepare();
+        try (var worker = new CoopPostgresBongWorker(sourcePostgresConfiguration, targetConfiguration)) {
+            worker.prepare();
+        }
     }
 
     @Disabled
     @Test
     void readDatabaseAndCreateRawdata() {
-        CoopPostgresBongRepository repository = new CoopPostgresBongRepository(sourcePostgresConfiguration, targetConfiguration);
-        repository.produce();
+        try (var worker = new CoopPostgresBongWorker(sourcePostgresConfiguration, targetConfiguration)) {
+            worker.produce();
+        }
     }
 }

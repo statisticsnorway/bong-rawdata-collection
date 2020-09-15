@@ -6,6 +6,7 @@ module bong.rema {
     requires no.ssb.service.provider.api;
     requires no.ssb.config;
     requires no.ssb.rawdata.api;
+    requires no.ssb.rawdata.encryption;
 
     requires org.slf4j;
 

@@ -1,7 +1,7 @@
 package no.ssb.dc.bong.ng.ping;
 
 import no.ssb.dc.bong.commons.config.TargetConfiguration;
-import no.ssb.dc.bong.commons.rawdata.BufferedRawdataProducer;
+import no.ssb.dc.bong.commons.target.BufferedRawdataProducer;
 import no.ssb.rawdata.api.RawdataClient;
 import no.ssb.rawdata.api.RawdataClientInitializer;
 import no.ssb.rawdata.api.RawdataMessage;
@@ -25,7 +25,7 @@ public class RawdataGCSTestWrite {
                 RawdataMessage.Builder messageBuilder = producer.builder();
                 messageBuilder.position("1");
                 messageBuilder.put("entry", "hello".getBytes());
-                try (BufferedRawdataProducer bufferedRawdataProducer = new BufferedRawdataProducer(10, producer, "PASSWORD".toCharArray(), "SALT".getBytes())) {
+                try (BufferedRawdataProducer bufferedRawdataProducer = new BufferedRawdataProducer(gcsConfiguration.asDynamicConfiguration(), 10, producer)) {
                     bufferedRawdataProducer.produce(messageBuilder.build());
                     LOG.trace("Published: 1");
                 }

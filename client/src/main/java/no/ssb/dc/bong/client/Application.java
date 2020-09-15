@@ -5,10 +5,12 @@ import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.bong.commons.config.GCSConfiguration;
 import no.ssb.dc.bong.commons.config.SourceLmdbConfiguration;
 import no.ssb.dc.bong.commons.config.SourcePostgresConfiguration;
-import no.ssb.dc.bong.coop.CoopPostgresBongRepository;
+import no.ssb.dc.bong.coop.CoopPostgresBongWorker;
 import no.ssb.dc.bong.ng.ping.RawdataGCSTestWrite;
-import no.ssb.dc.bong.ng.repository.NGLmdbBongRepository;
-import no.ssb.dc.bong.ng.repository.NGPostgresBongRepository;
+import no.ssb.dc.bong.ng.repository.NGLmdbBongWorker;
+import no.ssb.dc.bong.ng.repository.NGPostgresBongWorker;
+import no.ssb.dc.bong.rema.RemaBongWorker;
+import no.ssb.dc.bong.rema.SourceRemaConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The DynamicConfiguration captures environment variables set to docker and executes a Command.
  * <p>
  * usage:
- * docker run -it --rm -e BONG_ping.test= bong-collection:dev
+ * docker run -it --rm -e BONG_test-gcs-write= bong-collection:dev
  */
 public class Application implements Runnable {
 
@@ -31,12 +33,44 @@ public class Application implements Runnable {
                 LOG.info("Copy dummy rawdata to bucket (ping test).");
                 new RawdataGCSTestWrite().produceRawdataToGCS(new GCSConfiguration());
             }),
-            new Command("build-database", "ng-lmdb", () -> new NGLmdbBongRepository(new SourceLmdbConfiguration(), new GCSConfiguration()).prepare()),
-            new Command("produce-rawdata", "ng-lmdb", () -> new NGLmdbBongRepository(new SourceLmdbConfiguration(), new GCSConfiguration()).produce()),
-            new Command("build-database", "ng-postgres", () -> new NGPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).prepare()),
-            new Command("produce-rawdata", "ng-postgres", () -> new NGPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).produce()),
-            new Command("build-database", "coop-postgres", () -> new CoopPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).prepare()),
-            new Command("produce-rawdata", "coop-postgres", () -> new CoopPostgresBongRepository(new SourcePostgresConfiguration(), new GCSConfiguration()).produce())
+            new Command("build-database", "ng-lmdb", () -> {
+                try (var worker = new NGLmdbBongWorker(new SourceLmdbConfiguration(), new GCSConfiguration())) {
+                    worker.prepare();
+                }
+            }),
+            new Command("produce-rawdata", "ng-lmdb", () -> {
+                try (var worker = new NGLmdbBongWorker(new SourceLmdbConfiguration(), new GCSConfiguration())) {
+                    worker.produce();
+                }
+            }),
+            new Command("build-database", "ng-postgres", () -> {
+                try (var worker = new NGPostgresBongWorker(new SourcePostgresConfiguration(), new GCSConfiguration())) {
+                    worker.prepare();
+                }
+            }),
+            new Command("produce-rawdata", "ng-postgres", () -> {
+                try (var worker = new NGPostgresBongWorker(new SourcePostgresConfiguration(), new GCSConfiguration())) {
+                    worker.produce();
+                }
+            }),
+            new Command("build-database", "coop-postgres", () -> {
+                try (var worker = new CoopPostgresBongWorker(new SourcePostgresConfiguration(), new GCSConfiguration())) {
+                    worker.prepare();
+                }
+            }),
+            new Command("produce-rawdata", "coop-postgres", () -> {
+                try (var worker = new CoopPostgresBongWorker(new SourcePostgresConfiguration(), new GCSConfiguration())) {
+                    worker.produce();
+                }
+            }),
+            new Command("produce-rawdata", "rema-fs", () -> {
+                try (RemaBongWorker worker = new RemaBongWorker(new SourceRemaConfiguration(), new GCSConfiguration())) {
+                    if (!worker.validate()) {
+                        return;
+                    }
+                    worker.produce();
+                }
+            })
     );
 
     private final DynamicConfiguration configuration;

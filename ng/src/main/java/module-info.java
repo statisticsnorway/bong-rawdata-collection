@@ -8,6 +8,7 @@ module bong.ng {
     requires no.ssb.rawdata.api;
 
     requires bong.commons;
+    requires no.ssb.rawdata.encryption; // used in test
 
     requires org.slf4j;
 

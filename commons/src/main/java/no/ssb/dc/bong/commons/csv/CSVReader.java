@@ -6,12 +6,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CSVReader {
@@ -40,7 +42,14 @@ public class CSVReader {
             }
             LOG.info("Parse file: {}", csvFile);
             try (Stream<String> lines = Files.lines(file, charset)) {
-                lines.skip(skipHeader).forEachOrdered(line -> visit.accept(new Record(csvFile, line, List.of(line.split(delimeter)))));
+                lines.skip(skipHeader)
+                        .forEachOrdered(line -> visit.accept(
+                                new Record(
+                                        csvFile,
+                                        line,
+                                        List.of(line.split(delimeter)).stream().map(token -> new String(token.getBytes(StandardCharsets.UTF_8))).collect(Collectors.toList())
+                                )
+                        ));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

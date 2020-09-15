@@ -4,6 +4,7 @@ module bong.client {
     requires bong.commons;
     requires bong.ng;
     requires bong.coop;
+    requires bong.rema;
 
     requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.postgres;

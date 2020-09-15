@@ -40,6 +40,12 @@
         </dependency>
 
         <dependency>
+            <groupId>no.ssb.dc.bong</groupId>
+            <artifactId>bong-rema1000</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>no.ssb.rawdata</groupId>
             <artifactId>rawdata-client-provider-gcs</artifactId>
             <version>0.9</version>
