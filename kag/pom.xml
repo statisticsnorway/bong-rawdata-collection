@@ -112,6 +112,7 @@
                 <version>3.0.0-M5</version>
                 <configuration>
                     <argLine>
+                        --enable-preview
                         --illegal-access=deny
                         --add-opens=java.base/java.nio=lmdbjava
                         --add-exports=java.base/sun.nio.ch=lmdbjava
