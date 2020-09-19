@@ -1,10 +1,9 @@
-module bong.client {
+module rawdata.collection.client {
 
     requires no.ssb.config;
-    requires bong.commons;
-    requires bong.ng;
-    requires bong.coop;
-    requires bong.rema;
+    requires rawdata.collection.api;
+    requires rawdata.collection.bong;
+    requires rawdata.collection.kag;
 
     requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.postgres;
@@ -12,8 +11,8 @@ module bong.client {
 
     requires org.slf4j;
 
-    opens no.ssb.dc.bong.client to bong.commons;
+    opens no.ssb.dc.collection.client to rawdata.collection.api;
 
-    exports no.ssb.dc.bong.client;
+    exports no.ssb.dc.collection.client;
 
 }

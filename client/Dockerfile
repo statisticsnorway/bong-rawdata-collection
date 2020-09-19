@@ -1,7 +1,7 @@
 #
 # Build Image
 #
-FROM statisticsnorway/alpine-jdk13-buildtools:latest as build
+FROM statisticsnorway/alpine-jdk15-buildtools:latest as build
 
 
 
@@ -32,7 +32,7 @@ RUN mkdir -p /ld_lib \
     && unzip "$LMDB_NATIVE_JAR" "jni/x86_64-Linux/*" -d /ld_lib \
     && rm -f "$LMDB_NATIVE_JAR"
 
-COPY target/bong-client-*.jar $APP_HOME/lib
+COPY target/rawdata-collection-client-*.jar $APP_HOME/lib
 
 RUN mkdir -p /conf && \
     mkdir -p /source && \
@@ -51,6 +51,6 @@ WORKDIR $APP_HOME
 
 EXPOSE 9992
 
-VOLUME ["/conf", "/source", "/database", "/avro"]
+VOLUME ["/conf", "/source", "/database", "/avro", "/export"]
 
 CMD ["/run.sh"]

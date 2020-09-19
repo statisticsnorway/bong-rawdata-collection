@@ -5,18 +5,18 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>no.ssb.dc.bong</groupId>
-    <artifactId>bong-project</artifactId>
+    <groupId>no.ssb.dc.rawdata</groupId>
+    <artifactId>rawdata-collection-project</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Bong Collection Project</name>
-    <description>Bong Collection Project</description>
+    <name>Rawdata Collection Project</name>
+    <description>Rawdata Collection Project</description>
     <url>https://github.com/statisticsnorway/</url>
     <inceptionYear>2020</inceptionYear>
 
     <properties>
-        <java.version>13</java.version>
+        <java.version>15</java.version>
         <module.build.sourceEncoding>UTF-8</module.build.sourceEncoding>
         <maven.javadoc.skip>true</maven.javadoc.skip>
 
@@ -48,10 +48,9 @@
     </scm>
 
     <modules>
-        <module>commons</module>
-        <module>ng</module>
-        <module>coop</module>
-        <module>rema1000</module>
+        <module>api</module>
+        <module>bong</module>
+        <module>kag</module>
         <module>client</module>
     </modules>
 

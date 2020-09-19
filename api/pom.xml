@@ -2,7 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -12,85 +11,146 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rawdata-collection-client</artifactId>
+    <artifactId>rawdata-collection-api</artifactId>
     <packaging>jar</packaging>
 
-    <name>Rawdata Collection Client</name>
-    <description>RawdataCollection Client</description>
+    <name>Rawdata Collection API</name>
+    <description>Rawdata Collection API</description>
     <url>https://github.com/statisticsnorway/</url>
     <inceptionYear>2020</inceptionYear>
 
     <dependencies>
         <dependency>
-            <groupId>no.ssb.dc.rawdata</groupId>
-            <artifactId>rawdata-collection-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>no.ssb.config</groupId>
+            <artifactId>dynamic-configuration</artifactId>
+            <version>0.4</version>
         </dependency>
 
         <dependency>
-            <groupId>no.ssb.dc.rawdata</groupId>
-            <artifactId>bong-collection</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.dc.rawdata</groupId>
-            <artifactId>kag-collection</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>no.ssb.spi</groupId>
+            <artifactId>service-provider-api</artifactId>
+            <version>0.4</version>
         </dependency>
 
         <dependency>
             <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-gcs</artifactId>
-            <version>0.9</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.checkerframework</groupId>
-                    <artifactId>checker-compat-qual</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>rawdata-client-api</artifactId>
+            <version>0.23</version>
         </dependency>
 
         <dependency>
             <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-postgres</artifactId>
-            <version>0.9</version>
+            <artifactId>rawdata-crypto-util</artifactId>
+            <version>0.1</version>
         </dependency>
 
         <dependency>
-            <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-kafka</artifactId>
-            <version>0.3</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.10.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.10.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.10.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.4.0-b180830.0359</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>2.4.0-b180830.0438</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.huxhorn.sulky</groupId>
+            <artifactId>de.huxhorn.sulky.ulid</artifactId>
+            <version>8.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lmdbjava</groupId>
+            <artifactId>lmdbjava</artifactId>
+            <version>0.8.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jffi</artifactId>
+            <version>1.2.18</version>
+            <classifier>native</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>3.4.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.2.16</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>1.4.200</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>com.sun.mail</groupId>
@@ -144,7 +204,7 @@
                         --illegal-access=deny
                         --add-opens=java.base/java.nio=lmdbjava
                         --add-exports=java.base/sun.nio.ch=lmdbjava
-                        --add-opens=rawdata.collection.client/no.ssb.dc.collection.client=ALL-UNNAMED
+                        --add-opens=rawdata.collection.api/no.ssb.dc.collection.api.source=ALL-UNNAMED
                         -Xmx1500m
                     </argLine>
                 </configuration>

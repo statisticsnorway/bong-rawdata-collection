@@ -44,7 +44,7 @@ else
   JMX_REMOTE_OPTS=""
 fi
 
-DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseContainerSupport"
+DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseContainerSupport --enable-preview"
 
-java $JPMS_SWITCHES $JAVA_OPTS $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS -p /opt/app/lib -m bong.client/no.ssb.dc.bong.client.Application
+java $JPMS_SWITCHES $JAVA_OPTS $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS -p /opt/app/lib -m rawdata.collection.client/no.ssb.dc.collection.client.Application
 

@@ -12,11 +12,11 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>rawdata-collection-client</artifactId>
+    <artifactId>kag-collection</artifactId>
     <packaging>jar</packaging>
 
-    <name>Rawdata Collection Client</name>
-    <description>RawdataCollection Client</description>
+    <name>Karakter Avsluttet Grunnskole Collection</name>
+    <description>Karakter Avsluttet Grunnskole Collection</description>
     <url>https://github.com/statisticsnorway/</url>
     <inceptionYear>2020</inceptionYear>
 
@@ -25,42 +25,6 @@
             <groupId>no.ssb.dc.rawdata</groupId>
             <artifactId>rawdata-collection-api</artifactId>
             <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.dc.rawdata</groupId>
-            <artifactId>bong-collection</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.dc.rawdata</groupId>
-            <artifactId>kag-collection</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-gcs</artifactId>
-            <version>0.9</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.checkerframework</groupId>
-                    <artifactId>checker-compat-qual</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-postgres</artifactId>
-            <version>0.9</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-kafka</artifactId>
-            <version>0.3</version>
         </dependency>
 
         <dependency>
@@ -97,6 +61,13 @@
                     <artifactId>javax.mail</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.rawdata</groupId>
+            <artifactId>rawdata-client-provider-gcs</artifactId>
+            <version>0.9</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -144,11 +115,11 @@
                         --illegal-access=deny
                         --add-opens=java.base/java.nio=lmdbjava
                         --add-exports=java.base/sun.nio.ch=lmdbjava
-                        --add-opens=rawdata.collection.client/no.ssb.dc.collection.client=ALL-UNNAMED
                         -Xmx1500m
                     </argLine>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
 </project>
