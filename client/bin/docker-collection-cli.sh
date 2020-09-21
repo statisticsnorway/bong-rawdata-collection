@@ -55,7 +55,8 @@ log() {
 }
 
 validate() {
-  if [ -n "$RAWDATA_SECRET_FILE" ] && [ ! -f "$RAWDATA_SECRET_FILE" ]; then
+  LOCAL_RAWDATA_SECRET_FILEPATH="$LOCAL_SECRET_FOLDER/$RAWDATA_SECRET_FILE"
+  if [ -n "$LOCAL_RAWDATA_SECRET_FILEPATH" ] && [ ! -f "$LOCAL_RAWDATA_SECRET_FILEPATH" ]; then
     echo "Secret file is NOT found!"
     exit 0
   fi
@@ -102,10 +103,10 @@ validate() {
 # Set bucket encryption keys
 #
 evaluateRawdataSecrets() {
-  if [[ -f "$RAWDATA_SECRET_FILE" ]]; then
-    echo "Set encryption environment variables from: $RAWDATA_SECRET_FILE"
+  if [[ -f "$LOCAL_RAWDATA_SECRET_FILEPATH" ]]; then
+    echo "Set encryption environment variables from: $LOCAL_RAWDATA_SECRET_FILEPATH"
     set -a
-    source "$RAWDATA_SECRET_FILE"
+    source "$LOCAL_RAWDATA_SECRET_FILEPATH"
     set +a
   fi
 }

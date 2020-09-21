@@ -13,24 +13,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-abstract public class DynamicKey implements RepositoryKey {
+abstract public class GenericKey implements RepositoryKey {
 
-    private final static Logger LOG = LoggerFactory.getLogger(DynamicKey.class);
+    private final static Logger LOG = LoggerFactory.getLogger(GenericKey.class);
 
     private final Map<String, Object> values;
 
-    public DynamicKey() {
+    public GenericKey() {
         values = new LinkedHashMap<>();
     }
 
-    public DynamicKey(Map<String, Object> values) {
+    public GenericKey(Map<String, Object> values) {
         Objects.requireNonNull(values);
         this.values = values;
     }
 
-    public static <R extends DynamicKey> R create(Class<R> clazz, Map<String, Object> values) {
+    public static <R extends GenericKey> R create(Class<R> clazz, Map<String, Object> values) {
         try {
-            Constructor<? extends DynamicKey> constructor = clazz.getDeclaredConstructor(Map.class);
+            Constructor<? extends GenericKey> constructor = clazz.getDeclaredConstructor(Map.class);
             return (R) constructor.newInstance(values);
 
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -70,7 +70,7 @@ abstract public class DynamicKey implements RepositoryKey {
                 throw new UnsupportedOperationException();
             }
         }
-        return (R) DynamicKey.create(this.getClass(), values);
+        return (R) GenericKey.create(this.getClass(), values);
     }
 
     @Override
@@ -107,15 +107,20 @@ abstract public class DynamicKey implements RepositoryKey {
     public boolean isKeyValueEqualTo(List<String> keys, Object other) {
         if (this == other) return true;
         if (other == null || getClass() != other.getClass()) return false;
-        DynamicKey that = (DynamicKey) other;
+        GenericKey that = (GenericKey) other;
         return keys.stream().allMatch(key -> Objects.equals(values().get(key), that.values.get(key)));
     }
+
+    public boolean isPartOf(Object other) {
+        return isKeyValueEqualTo(positionKeys(), other);
+    }
+
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        DynamicKey that = (DynamicKey) o;
+        GenericKey that = (GenericKey) o;
         return Objects.equals(values, that.values);
     }
 

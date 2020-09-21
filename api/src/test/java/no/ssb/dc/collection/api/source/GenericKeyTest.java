@@ -9,7 +9,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DynamicKeyTest {
+public class GenericKeyTest {
 
     @Test
     void name() {
@@ -31,7 +31,7 @@ public class DynamicKeyTest {
         assertEquals(fromDummyKey, toDummyKey);
     }
 
-    static class DummyKey extends DynamicKey {
+    static class DummyKey extends GenericKey {
 
         static final Map<String, Class<?>> keys = new LinkedHashMap<>();
 

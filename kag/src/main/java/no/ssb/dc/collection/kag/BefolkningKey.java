@@ -6,28 +6,29 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class KarakterKey extends GenericKey {
+public class BefolkningKey extends GenericKey {
 
     static final Map<String, Class<?>> keys = new LinkedHashMap<>();
     static final List<String> positionKeys = new ArrayList<>();
+    static final AtomicLong seq = new AtomicLong();
 
     static {
         keys.put("filename", String.class);
-        keys.put("Filid", Long.class);
-        keys.put("Fnr", String.class);
-        keys.put("Radnr", Long.class);
+        keys.put("Fnr", Long.class);
+        keys.put("lineIndex", Long.class);
 
-        positionKeys.add("Filid");
         positionKeys.add("Fnr");
     }
 
-    public KarakterKey() {
+    public BefolkningKey() {
         super();
     }
 
-    public KarakterKey(Map<String, Object> values) {
+    public BefolkningKey(Map<String, Object> values) {
         super(values);
+        values.put("lineIndex", seq.incrementAndGet());
     }
 
     @Override
@@ -38,9 +39,5 @@ public class KarakterKey extends GenericKey {
     @Override
     public List<String> positionKeys() {
         return positionKeys;
-    }
-
-    public boolean isPartOGroup(Object other) {
-        return isKeyValueEqualTo(positionKeys, other);
     }
 }

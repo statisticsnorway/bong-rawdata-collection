@@ -11,8 +11,8 @@ Secondly, the rawdata producer generates Avro Rawdata files that is uploaded to 
 ## Modules
 
 * Client - THe CLI Application
-* Commons - Common files parsing, database and producer capabilities
-* Bong producer modules: NG, Coop and Rema 1000
+* API - Common files parsing, database and producer capabilities
+* Producer modules: Bong and KAG (Karakterer Avsluttende Grunnskole)
 
 ## How it works
 
@@ -32,4 +32,4 @@ Henceforth, bong key is sortable and enables each bong to be read sequentially.
 
 ## CLI
 
-Please refer to the `client/bin/` and read the shell scripts for usage.
+Please refer to the `client/bin/` and read `~/bin/rawdata-collection.sh` for usage.

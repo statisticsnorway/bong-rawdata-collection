@@ -3,7 +3,7 @@ package no.ssb.dc.collection.kag;
 import no.ssb.dc.collection.api.config.SourceLmdbConfiguration;
 import no.ssb.dc.collection.api.config.TargetConfiguration;
 import no.ssb.dc.collection.api.source.CsvWorker;
-import no.ssb.dc.collection.api.source.DynamicKey;
+import no.ssb.dc.collection.api.source.GenericKey;
 import no.ssb.dc.collection.api.source.LmdbCsvRepository;
 import no.ssb.dc.collection.api.utils.ConversionUtils;
 
@@ -27,10 +27,15 @@ public class KarakterWorker implements CsvWorker<KarakterKey> {
         );
     }
 
-    private static String csvHeader() {
-        return "FilID;RadID;RadNr;Fødselsnummer;Skoleår;Skolenummer;Programområdekode;Fagkode;Fagstatus;Karakter halvårsvurdering 1;" +
-                "Karakter halvårsvurdering 2;Karakter standpunkt;Karakter skriftlig eksamen;Karakter muntlig eksamen;Karakter annen;" +
-                "Skoleår 2;Skolenummer 2;Er linja aktiv?;Elevtimer;Forrige fagstatus;Fagmerknad kode;Karakterstatus;";
+    // FilID6188_Data.csv and
+    static String csvHeader() {
+        return CamelCaseHelper.formatCsvHeader(
+                """
+                        FilID;RadID;RadNr;Fødselsnummer;Skoleår;Skolenummer;Programområdekode;Fagkode;Fagstatus;Karakter halvårsvurdering 1;\
+                        Karakter halvårsvurdering 2;Karakter standpunkt;Karakter skriftlig eksamen;Karakter muntlig eksamen;Karakter annen;\
+                        Skoleår 2;Skolenummer 2;Er linja aktiv?;Elevtimer;Forrige fagstatus;Fagmerknad kode;Karakterstatus;
+                        """
+                , ";");
     }
 
     @Override
@@ -38,10 +43,10 @@ public class KarakterWorker implements CsvWorker<KarakterKey> {
         csvRepository.prepare(record -> {
             Map<String, Object> values = new LinkedHashMap<>();
             values.put("filename", record.filename);
-            values.put("fileId", ConversionUtils.toLong(record.tokens.get(0)));
-            values.put("fnr", ConversionUtils.toInteger(record.tokens.get(3)));
-            values.put("rowId", ConversionUtils.toLong(record.tokens.get(1)));
-            return DynamicKey.create(KarakterKey.class, values);
+            values.put("Filid", ConversionUtils.toLong(record.tokens.get(0)));
+            values.put("Fnr", ConversionUtils.toString(record.tokens.get(3)));
+            values.put("Radnr", ConversionUtils.toLong(record.tokens.get(1)));
+            return GenericKey.create(KarakterKey.class, values);
         });
     }
 

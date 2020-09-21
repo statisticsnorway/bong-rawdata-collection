@@ -19,6 +19,8 @@ module rawdata.collection.kag {
     requires org.postgresql.jdbc;
     requires com.zaxxer.hikari;
 
+    requires org.apache.commons.text;
+
     opens no.ssb.dc.collection.kag; // reflection from Commons.RepositoryKey
 
     exports no.ssb.dc.collection.kag;

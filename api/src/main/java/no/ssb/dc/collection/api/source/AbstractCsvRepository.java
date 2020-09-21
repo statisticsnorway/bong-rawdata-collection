@@ -92,6 +92,11 @@ abstract public class AbstractCsvRepository<T extends RepositoryKey> {
 
                 // add current keyValue
                 groupAndContentMap.put(currentKey, entry.getValue());
+            } else {
+                // add previous keyValue if absent
+                if (!groupAndContentMap.containsKey(prevEntry.get().getKey())) {
+                    groupAndContentMap.put(prevEntry.get().getKey(), prevEntry.get().getValue());
+                }
             }
 
             if (!groupAndContentMap.isEmpty() && (!isPrevKeyPartOfCurrentKey.test(prevEntry.get().getKey(), currentKey) || !hasNext)) {
@@ -99,7 +104,7 @@ abstract public class AbstractCsvRepository<T extends RepositoryKey> {
                 entrySetCallback.accept(groupAndContentMap);
 
                 if (groupCount.incrementAndGet() % 10000 == 0) {
-                    LOG.info("Postgres - Produced Group Count: {}", groupCount.get());
+                    LOG.info("Database - Produced Group Count: {}", groupCount.get());
                 }
 
                 // reset map

@@ -85,7 +85,7 @@ public class LmdbEnvironment implements AutoCloseable {
 
     private Env<ByteBuffer> createEnvironment() {
         long dbSize = mapSize * 1024 * 1024;
-        LOG.info("{}} Lmdb database with numberOfDbs: {}, mapSize: {} MiB, dbSize: {} bytes", (dropDatabase ? "Create" : "Open"), numberOfDbs, mapSize, dbSize);
+        LOG.info("{} Lmdb database with numberOfDbs: {}, mapSize: {} MiB, dbSize: {} bytes", (dropDatabase ? "Create" : "Open"), numberOfDbs, mapSize, dbSize);
         return Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
                 .setMapSize(dbSize)

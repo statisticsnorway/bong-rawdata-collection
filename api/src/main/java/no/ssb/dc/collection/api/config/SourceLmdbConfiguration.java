@@ -2,13 +2,14 @@ package no.ssb.dc.collection.api.config;
 
 import no.ssb.config.DynamicConfiguration;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class SourceLmdbConfiguration extends AbstractConfiguration {
 
     public SourceLmdbConfiguration() {
-        super();
+        this(new LinkedHashMap<>());
     }
 
     public SourceLmdbConfiguration(Map<String, String> overrideKeyValuePairs) {

@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class KarakterKey extends GenericKey {
+public class ResultatKey extends GenericKey {
 
     static final Map<String, Class<?>> keys = new LinkedHashMap<>();
     static final List<String> positionKeys = new ArrayList<>();
@@ -15,18 +15,18 @@ public class KarakterKey extends GenericKey {
     static {
         keys.put("filename", String.class);
         keys.put("Filid", Long.class);
-        keys.put("Fnr", String.class);
+        keys.put("Fnr", Long.class);
         keys.put("Radnr", Long.class);
 
         positionKeys.add("Filid");
         positionKeys.add("Fnr");
     }
 
-    public KarakterKey() {
+    public ResultatKey() {
         super();
     }
 
-    public KarakterKey(Map<String, Object> values) {
+    public ResultatKey(Map<String, Object> values) {
         super(values);
     }
 

@@ -7,26 +7,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class KarakterKey extends GenericKey {
+public class NuskatKey extends GenericKey {
 
     static final Map<String, Class<?>> keys = new LinkedHashMap<>();
     static final List<String> positionKeys = new ArrayList<>();
 
     static {
         keys.put("filename", String.class);
-        keys.put("Filid", Long.class);
-        keys.put("Fnr", String.class);
-        keys.put("Radnr", Long.class);
+        keys.put("Nus2000", Long.class);
 
-        positionKeys.add("Filid");
-        positionKeys.add("Fnr");
+        positionKeys.add("Nus2000");
     }
 
-    public KarakterKey() {
+    public NuskatKey() {
         super();
     }
 
-    public KarakterKey(Map<String, Object> values) {
+    public NuskatKey(Map<String, Object> values) {
         super(values);
     }
 
@@ -38,9 +35,5 @@ public class KarakterKey extends GenericKey {
     @Override
     public List<String> positionKeys() {
         return positionKeys;
-    }
-
-    public boolean isPartOGroup(Object other) {
-        return isKeyValueEqualTo(positionKeys, other);
     }
 }
