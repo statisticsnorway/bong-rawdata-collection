@@ -8,7 +8,7 @@ public class TextBlockTest {
     void printTextBlock() {
 //        System.out.printf("%s%n", StatistikkWorker.csvHeader());
         System.out.printf("%s%n", ResultatWorker.csvHeader());
-        System.out.printf("%s%n", KarakterWorker.csvHeader());
+//        System.out.printf("%s%n", KarakterWorker.csvHeader());
     }
 
     @Test

@@ -36,9 +36,6 @@ public class ResultatWorker implements CsvWorker<ResultatKey> {
                         Antall fag på elevkurset;Antall stryk på elevkurset;Bevistype;Forrige elevstatus;Målform (norsk hovedmål);Rettstype i hjemfylket;Påbyggingsrett;         
                         """
                 , ";");
-//        return "FilID;RadID;RadNr;Fødselsnummer;Skoleår;Skolenummer;Programområdekode;Fagkode;Fagstatus;Karakter halvårsvurdering 1;" +
-//                "Karakter halvårsvurdering 2;Karakter standpunkt;Karakter skriftlig eksamen;Karakter muntlig eksamen;Karakter annen;" +
-//                "Skoleår 2;Skolenummer 2;Er linja aktiv?;Elevtimer;Forrige fagstatus;Fagmerknad kode;Karakterstatus;";
     }
 
     @Override

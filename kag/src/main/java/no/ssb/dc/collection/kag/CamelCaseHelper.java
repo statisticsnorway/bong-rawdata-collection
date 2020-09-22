@@ -10,13 +10,13 @@ public class CamelCaseHelper {
     static public String formatCsvHeader(String csvHeader, String delimeter) {
         String[] tokens = csvHeader.split(delimeter);
         for (int n = 0; n < tokens.length; n++) {
-            tokens[n] = CaseUtils.toCamelCase(removeChars(tokens[n], "\\?"), true, '_');
+            tokens[n] = CaseUtils.toCamelCase(removeChars(tokens[n], "\\?"), true, '_', '(', ')');
         }
         return removeLastDelimeterIfExists(String.join(delimeter, List.of(tokens)), delimeter);
     }
 
     static public String formatToken(String str, String delimeter) {
-        return CaseUtils.toCamelCase(removeLastDelimeterIfExists(removeChars(str, "\\?"), delimeter), true, '_');
+        return CaseUtils.toCamelCase(removeLastDelimeterIfExists(removeChars(str, "\\?"), delimeter), true, '_', '(', ')');
     }
 
     static public String removeChars(String str, String... chars) {
