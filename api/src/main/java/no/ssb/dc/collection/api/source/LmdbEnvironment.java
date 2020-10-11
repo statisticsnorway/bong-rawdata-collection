@@ -1,6 +1,6 @@
 package no.ssb.dc.collection.api.source;
 
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.SourceLmdbConfiguration;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.EnvFlags;
@@ -30,12 +30,13 @@ public class LmdbEnvironment implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final long mapSize;
     private final int numberOfDbs;
-    private Dbi<ByteBuffer> db;
+    private Dbi<ByteBuffer> metaDb;
+    private Dbi<ByteBuffer> recordDb;
 
-    public LmdbEnvironment(DynamicConfiguration configuration, boolean dropDatabase) {
-        this.topic = configuration.evaluateToString("rawdata.topic");
+    public LmdbEnvironment(SourceLmdbConfiguration configuration, boolean dropDatabase) {
+        this.topic = configuration.topic();
         this.dropDatabase = dropDatabase;
-        String databasePath = configuration.evaluateToString("lmdb.path");
+        String databasePath = configuration.lmdbPath();
         if (databasePath.contains("$PROJECT_DIR")) {
             databasePath = databasePath.replace("$PROJECT_DIR", Paths.get(".").normalize().resolve(databasePath).toString());
         }
@@ -45,10 +46,8 @@ public class LmdbEnvironment implements AutoCloseable {
             removePath(databaseDir);
         }
         createDirectories(this.databaseDir);
-        mapSize = configuration != null && configuration.evaluateToString("lmdb.sizeInMb") != null ?
-                configuration.evaluateToInt("lmdb.sizeInMb") : 50;
-        numberOfDbs = configuration != null && configuration.evaluateToString("lmdb.numberOfDbs") != null ?
-                configuration.evaluateToInt("lmdb.numberOfDbs") : 1;
+        mapSize = configuration.hasLmdbSizeInMb() != null ? configuration.lmdbSizeInMb() : 50;
+        numberOfDbs = 2;
         env = createEnvironment();
     }
 
@@ -97,18 +96,31 @@ public class LmdbEnvironment implements AutoCloseable {
                 .open(databaseDir.toFile(), EnvFlags.MDB_MAPASYNC, EnvFlags.MDB_NOSYNC, EnvFlags.MDB_NOMETASYNC);
     }
 
-    public Dbi<ByteBuffer> open() {
-        if (!closed.get() && db != null) {
-            return db;
+    public Dbi<ByteBuffer> openMetaDb() {
+        if (!closed.get() && metaDb != null) {
+            return metaDb;
         }
-        db = env.openDbi(topic, MDB_CREATE);
-        return db;
+        metaDb = env.openDbi(topic + "_meta", MDB_CREATE);
+        return metaDb;
+    }
+
+    public Dbi<ByteBuffer> openRecordDb() {
+        if (!closed.get() && recordDb != null) {
+            return recordDb;
+        }
+        recordDb = env.openDbi(topic, MDB_CREATE);
+        return recordDb;
     }
 
     void drop() {
-        if (!closed.get() && db != null) {
+        if (!closed.get() && metaDb != null) {
             try (Txn<ByteBuffer> txn = env.txnWrite()) {
-                db.drop(txn);
+                metaDb.drop(txn);
+            }
+        }
+        if (!closed.get() && recordDb != null) {
+            try (Txn<ByteBuffer> txn = env.txnWrite()) {
+                recordDb.drop(txn);
             }
         }
     }

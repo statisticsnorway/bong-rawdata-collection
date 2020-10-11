@@ -1,6 +1,5 @@
 package no.ssb.dc.collection.bong.rema;
 
-import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.collection.api.config.TargetConfiguration;
 import no.ssb.dc.collection.api.utils.FixedThreadPool;
 import no.ssb.dc.collection.api.utils.ULIDGenerator;
@@ -34,8 +33,8 @@ public class RemaBongWorker implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(RemaBongWorker.class);
     private static AtomicLong readFileCount = new AtomicLong();
     private static AtomicLong publishedMessageCount = new AtomicLong();
-    private final DynamicConfiguration sourceConfiguration;
-    private final DynamicConfiguration targetConfiguration;
+    private final SourceRemaConfiguration sourceConfiguration;
+    private final TargetConfiguration targetConfiguration;
     private final FixedThreadPool threadPool;
     private final BufferedReordering<String> bufferedReordering = new BufferedReordering<>();
     private final Queue<CompletableFuture<RawdataMessageBuffer>> futures;
@@ -47,20 +46,20 @@ public class RemaBongWorker implements AutoCloseable {
     private final byte[] secretKey;
 
     public RemaBongWorker(SourceRemaConfiguration sourceConfiguration, TargetConfiguration targetConfiguration) {
-        this.sourceConfiguration = sourceConfiguration.asDynamicConfiguration();
-        this.targetConfiguration = targetConfiguration.asDynamicConfiguration();
+        this.sourceConfiguration = sourceConfiguration;
+        this.targetConfiguration = targetConfiguration;
         threadPool = FixedThreadPool.newInstance();
-        client = ProviderConfigurator.configure(targetConfiguration.asMap(), this.targetConfiguration.evaluateToString("rawdata.client.provider"), RawdataClientInitializer.class);
-        producer = client.producer(this.targetConfiguration.evaluateToString("rawdata.topic"));
-        sourcePath = Paths.get(this.sourceConfiguration.evaluateToString("root.path"))
-                .resolve(this.sourceConfiguration.evaluateToString("year"))
-                .resolve(this.sourceConfiguration.evaluateToString("month"))
+        client = ProviderConfigurator.configure(targetConfiguration.asMap(), this.targetConfiguration.rawdataClientProvider(), RawdataClientInitializer.class);
+        producer = client.producer(this.targetConfiguration.topic());
+        sourcePath = Paths.get(this.sourceConfiguration.rootPath())
+                .resolve(this.sourceConfiguration.year())
+                .resolve(this.sourceConfiguration.month())
                 .normalize()
                 .toAbsolutePath();
-        final char[] encryptionKey = this.targetConfiguration.evaluateToString("rawdata.encryptionKey") != null ?
-                this.targetConfiguration.evaluateToString("rawdata.encryptionKey").toCharArray() : null;
-        final byte[] encryptionSalt = this.targetConfiguration.evaluateToString("rawdata.encryptionSalt") != null ?
-                this.targetConfiguration.evaluateToString("rawdata.encryptionSalt").getBytes() : null;
+        final char[] encryptionKey = this.targetConfiguration.hasRawdataEncryptionKey() ?
+                this.targetConfiguration.rawdataEncryptionKey().toCharArray() : null;
+        final byte[] encryptionSalt = this.targetConfiguration.hasRawdataEncryptionSalt() ?
+                this.targetConfiguration.rawdataEncryptionSalt().getBytes() : null;
         this.encryptionClient = new EncryptionClient();
         if (encryptionKey != null && encryptionKey.length > 0 && encryptionSalt != null && encryptionSalt.length > 0) {
             this.secretKey = encryptionClient.generateSecretKey(encryptionKey, encryptionSalt).getEncoded();
@@ -69,7 +68,7 @@ public class RemaBongWorker implements AutoCloseable {
         } else {
             this.secretKey = null;
         }
-        queueCapacity = this.sourceConfiguration.evaluateToString("queue.capacity") != null ? this.sourceConfiguration.evaluateToInt("queue.capacity") : 1000;
+        queueCapacity = this.sourceConfiguration.hasQueueCapacity() ? this.sourceConfiguration.queueCapacity() : 1000;
         futures = new LinkedBlockingDeque<>(queueCapacity);
     }
 

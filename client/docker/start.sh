@@ -2,6 +2,7 @@
 set -e
 
 JPMS_SWITCHES="
+  --add-opens=java.base/java.lang.invoke=rawdata.collection.api
   --add-opens java.base/java.nio=lmdbjava
   --add-exports java.base/sun.nio.ch=lmdbjava
 "
@@ -47,4 +48,3 @@ fi
 DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseContainerSupport --enable-preview"
 
 java $JPMS_SWITCHES $JAVA_OPTS $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS -p /opt/app/lib -m rawdata.collection.client/no.ssb.dc.collection.client.Application
-

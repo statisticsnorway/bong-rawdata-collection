@@ -3,7 +3,6 @@ module rawdata.collection.client {
     requires no.ssb.config;
     requires rawdata.collection.api;
     requires rawdata.collection.bong;
-    requires rawdata.collection.kag;
 
     requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.postgres;

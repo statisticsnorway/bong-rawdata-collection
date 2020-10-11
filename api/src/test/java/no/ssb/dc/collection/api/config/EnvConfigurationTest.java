@@ -32,18 +32,18 @@ public class EnvConfigurationTest {
         getModifiableEnvironment().put("BONG_source.csv.files", "files");
 
         // fail on missing required keys
-        assertThrows(IllegalArgumentException.class, SourceLmdbConfiguration::new);
+        assertThrows(IllegalArgumentException.class, SourceLmdbConfiguration::create);
 
         // complete required keys
         getModifiableEnvironment().put("BONG_source.lmdb.path", "lmdbpath");
 
         // successful required keys config
-        SourceLmdbConfiguration configuration = new SourceLmdbConfiguration();
+        SourceLmdbConfiguration configuration = SourceLmdbConfiguration.create();
 
-        assertEquals("topic", configuration.asDynamicConfiguration().evaluateToString("rawdata.topic"));
-        assertEquals("filepath", configuration.asDynamicConfiguration().evaluateToString("csv.filepath"));
-        assertEquals("files", configuration.asDynamicConfiguration().evaluateToString("csv.files"));
-        assertEquals("lmdbpath", configuration.asDynamicConfiguration().evaluateToString("lmdb.path"));
+        assertEquals("topic", configuration.topic());
+        assertEquals("filepath", configuration.filePath());
+        assertEquals("files", configuration.csvFiles());
+        assertEquals("lmdbpath", configuration.lmdbPath());
     }
 
     // --add-opens java.base/java.lang=bong.commons --add-opens java.base/java.util=bong.commons
@@ -54,16 +54,16 @@ public class EnvConfigurationTest {
         getModifiableEnvironment().put("BONG_target.local-temp-folder", "localTemp");
 
         // fail on missing required keys
-        assertThrows(IllegalArgumentException.class, LocalFileSystemConfiguration::new);
+        assertThrows(IllegalArgumentException.class, LocalFileSystemConfiguration::create);
 
         // complete required keys
         getModifiableEnvironment().put("BONG_target.filesystem.storage-folder", "storageFolder");
 
         // successful required keys config
-        LocalFileSystemConfiguration configuration = new LocalFileSystemConfiguration();
+        LocalFileSystemConfiguration configuration = LocalFileSystemConfiguration.create();
 
-        assertEquals("localTemp", configuration.asDynamicConfiguration().evaluateToString("local-temp-folder"));
-        assertEquals("storageFolder", configuration.asDynamicConfiguration().evaluateToString("filesystem.storage-folder"));
+        assertEquals("localTemp", configuration.localTempFolder());
+        assertEquals("storageFolder", configuration.localStorageFolder());
     }
 
     // --add-opens java.base/java.lang=bong.commons --add-opens java.base/java.util=bong.commons
@@ -75,17 +75,17 @@ public class EnvConfigurationTest {
         getModifiableEnvironment().put("BONG_target.gcs.service-account.key-file", "gs_secret.json");
 
         // fail on missing required keys
-        assertThrows(IllegalArgumentException.class, GCSConfiguration::new);
+        assertThrows(IllegalArgumentException.class, GCSConfiguration::create);
 
         // complete required keys
         getModifiableEnvironment().put("BONG_target.local-temp-folder", "localTemp");
 
         // successful required keys config
-        GCSConfiguration configuration = new GCSConfiguration();
+        GCSConfiguration configuration = GCSConfiguration.create();
 
-        assertEquals("topic", configuration.asDynamicConfiguration().evaluateToString("rawdata.topic"));
-        assertEquals("bucket", configuration.asDynamicConfiguration().evaluateToString("gcs.bucket-name"));
-        assertEquals("gs_secret.json", configuration.asDynamicConfiguration().evaluateToString("gcs.service-account.key-file"));
-        assertEquals("localTemp", configuration.asDynamicConfiguration().evaluateToString("local-temp-folder"));
+        assertEquals("topic", configuration.topic());
+        assertEquals("bucket", configuration.bucketName());
+        assertEquals("gs_secret.json", configuration.gcsServiceAccountKeyFile());
+        assertEquals("localTemp", configuration.localTempFolder());
     }
 }

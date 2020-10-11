@@ -1,59 +1,57 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.internal.DynamicProxy;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
-public class SourcePostgresConfiguration extends AbstractConfiguration {
+@Name("source-postgres")
+@Prefix("source.")
+@RequiredKeys({
+        "source.postgres.driver.host",
+        "source.postgres.driver.port",
+        "source.postgres.driver.user",
+        "source.postgres.driver.password",
+        "source.postgres.driver.database",
+        "source.rawdata.topic",
+        "source.csv.filepath",
+        "source.csv.files"
+})
+public interface SourcePostgresConfiguration extends SourceConfiguration {
 
-    public SourcePostgresConfiguration() {
-        this(new LinkedHashMap<>());
-    }
+    @Property("postgres.driver.host")
+    String postgresDriverHost();
 
-    public SourcePostgresConfiguration(Map<String, String> overrideKeyValuePairs) {
-        super("source.",
-                Map.of(
-                        "postgres.driver.host", "localhost",
-                        "postgres.driver.port", "5432",
-                        "postgres.driver.user", "bong",
-                        "postgres.driver.password", "bong",
-                        "postgres.driver.database", "bong",
-                        "queue.poolSize", "25000", // flush buffer on threshold
-                        "queue.keyBufferSize", "511",
-                        "queue.valueBufferSize", "2048"
-                ),
-                overrideKeyValuePairs
+    @Property("postgres.driver.port")
+    String postgresDriverPort();
+
+    @Property("postgres.driver.user")
+    String postgresDriverUser();
+
+    @Property("postgres.driver.password")
+    String postgresDriverPassword();
+
+    @Property("postgres.driver.database")
+    String postgresDriverDatabase();
+
+    @Override
+    default Map<String, String> defaultValues() {
+        return Map.of(
+                "queue.poolSize", "25000", // flush buffer on threshold
+                "queue.keyBufferSize", "511",
+                "queue.valueBufferSize", "2048",
+                "postgres.driver.host", "localhost",
+                "postgres.driver.port", "5432",
+                "postgres.driver.user", "bong",
+                "postgres.driver.password", "bong",
+                "postgres.driver.database", "bong"
         );
     }
 
-    public SourcePostgresConfiguration(Map<String, String> defaultKeyValuePairs, Map<String, String> overrideKeyValuePairs) {
-        super("source.",
-                defaultKeyValuePairs,
-                overrideKeyValuePairs
-        );
+    static SourcePostgresConfiguration create() {
+        return new DynamicProxy<>(SourcePostgresConfiguration.class).instance();
     }
 
-    @Override
-    public String name() {
-        return "source-postgres";
+    static SourcePostgresConfiguration create(Map<String, String> overrideValues) {
+        return new DynamicProxy<>(SourcePostgresConfiguration.class, overrideValues).instance();
     }
-
-    @Override
-    public Set<String> requiredKeys() {
-        return Set.of(
-                "source.postgres.driver.host",
-                "source.postgres.driver.port",
-                "source.postgres.driver.user",
-                "source.postgres.driver.password",
-                "source.postgres.driver.database"
-        );
-    }
-
-    @Override
-    public DynamicConfiguration asDynamicConfiguration() {
-        return configuration;
-    }
-
 }

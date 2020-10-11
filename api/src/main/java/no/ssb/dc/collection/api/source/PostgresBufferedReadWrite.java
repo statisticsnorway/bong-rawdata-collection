@@ -1,11 +1,12 @@
 package no.ssb.dc.collection.api.source;
 
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.SourcePostgresConfiguration;
 import no.ssb.dc.collection.api.jdbc.PostgresDataSource;
 import no.ssb.dc.collection.api.jdbc.PostgresTransaction;
 import no.ssb.dc.collection.api.jdbc.PostgresTransactionFactory;
 import no.ssb.dc.collection.api.utils.DirectByteBufferPool;
 import no.ssb.dc.collection.api.utils.FixedThreadPool;
+import no.ssb.dc.collection.api.worker.CsvSpecification;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -28,24 +29,26 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
     final DirectByteBufferPool keyPool;
     final DirectByteBufferPool valuePool;
     final PostgresTransactionFactory transactionFactory;
+    final CsvSpecification specification;
     final String topic;
     final AtomicBoolean isTableCreated = new AtomicBoolean(false);
     final AtomicBoolean closed = new AtomicBoolean(false);
 
-    public PostgresBufferedReadWrite(DynamicConfiguration configuration, PostgresTransactionFactory transactionFactory) {
+    public PostgresBufferedReadWrite(SourcePostgresConfiguration configuration, PostgresTransactionFactory transactionFactory, CsvSpecification specification) {
         this.transactionFactory = transactionFactory;
+        this.specification = specification;
         this.threadPool = FixedThreadPool.newInstance();
-        this.topic = configuration.evaluateToString("rawdata.topic");
-        int queuePoolSize = configuration.evaluateToInt("queue.poolSize");
-        int keySize = configuration.evaluateToString("queue.keyBufferSize") == null ? 511 : configuration.evaluateToInt("queue.keyBufferSize");
-        int valueSize = configuration.evaluateToString("queue.valueBufferSize") == null ? 0 : configuration.evaluateToInt("queue.valueBufferSize");
+        this.topic = configuration.topic();
+        int queuePoolSize = configuration.queuePoolSize();
+        int keySize = configuration.hasQueueKeyBufferSize() == null ? 511 : configuration.queueKeyBufferSize();
+        int valueSize = configuration.hasQueueValueBufferSize() == null ? 2048 : configuration.queueValueBufferSize();
         this.bufferQueue = new LinkedBlockingDeque<>(queuePoolSize);
         this.keyPool = new DirectByteBufferPool(queuePoolSize + 1, keySize);
         this.valuePool = new DirectByteBufferPool(queuePoolSize + 1, valueSize);
     }
 
     void createTopicIfNotExists(String topic, boolean dropAndCreateDatabase) {
-        if (!isTableCreated.get() && (!transactionFactory.checkIfTableTopicExists(topic, "bong_item") || dropAndCreateDatabase)) {
+        if (!isTableCreated.get() && (!transactionFactory.checkIfTableTopicExists(topic, "meta_item") || dropAndCreateDatabase)) {
             PostgresDataSource.dropOrCreateDatabase(transactionFactory, topic);
             isTableCreated.set(true);
         } else if (!dropAndCreateDatabase) {
@@ -55,29 +58,54 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
 
     @Override
     public void commitQueue() {
-        createTopicIfNotExists(topic, true);
+        createTopicIfNotExists(topic, false);
         try (PostgresTransaction transaction = transactionFactory.createTransaction(false)) {
             Map.Entry<ByteBuffer, ByteBuffer> buffer;
-            PreparedStatement ps = transaction.connection().prepareStatement(String.format("INSERT INTO \"%s_bong_item\" (key, value, ts) VALUES (?, ?, ?)", topic));
-            while ((buffer = bufferQueue.poll()) != null) {
-                try {
-                    byte[] key = new byte[buffer.getKey().remaining()];
-                    byte[] value = new byte[buffer.getValue().remaining()];
-                    buffer.getKey().get(key);
-                    buffer.getValue().get(value);
-                    ps.setBytes(1, key);
-                    ps.setBytes(2, value);
-                    ps.setTimestamp(3, Timestamp.from(new Date().toInstant()));
-                    ps.addBatch();
+            try (PreparedStatement ps = transaction.connection().prepareStatement(String.format("INSERT INTO \"%s_record_item\" (key, value, ts) VALUES (?, ?, ?)", topic))) {
+                while ((buffer = bufferQueue.poll()) != null) {
+                    try {
+                        byte[] key = new byte[buffer.getKey().remaining()];
+                        byte[] value = new byte[buffer.getValue().remaining()];
+                        buffer.getKey().get(key);
+                        buffer.getValue().get(value);
+                        ps.setBytes(1, key);
+                        ps.setBytes(2, value);
+                        ps.setTimestamp(3, Timestamp.from(new Date().toInstant()));
+                        ps.addBatch();
 
-                } finally {
-                    keyPool.release(buffer.getKey());
-                    valuePool.release(buffer.getValue());
+                    } finally {
+                        keyPool.release(buffer.getKey());
+                        valuePool.release(buffer.getValue());
+                    }
                 }
+                ps.executeBatch();
             }
-            ps.executeBatch();
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void writeHeader(String key, String value) {
+        if (closed.get()) {
+            throw new RuntimeException("Buffer is closed!");
+        }
+        createTopicIfNotExists(topic, true);
+        try (PostgresTransaction transaction = transactionFactory.createTransaction(false)) {
+            String sql = String.format("INSERT INTO \"%s_meta_item\" (key, value, ts) VALUES (?, ?, ?)", topic);
+            try (PreparedStatement ps = transaction.connection().prepareStatement(sql)) {
+                byte[] dbKey = key.getBytes();
+                byte[] dbValue = value.getBytes();
+                ps.setBytes(1, dbKey);
+                ps.setBytes(2, dbValue);
+                ps.setTimestamp(3, Timestamp.from(new Date().toInstant()));
+                ps.addBatch();
+                ps.executeUpdate();
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -88,6 +116,7 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
         }
         ByteBuffer keyBuffer = keyPool.acquire();
         key.toByteBuffer(keyBuffer);
+
         ByteBuffer contentBuffer = valuePool.acquire();
         byte[] contentBytes = value.getBytes(StandardCharsets.UTF_8);
         contentBuffer.putInt(contentBytes.length);
@@ -103,7 +132,7 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
     }
 
     @Override
-    public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> visit) {
+    public void readHeader(BiConsumer<Map.Entry<String, String>, Boolean> handleRecordCallback) {
         if (closed.get()) {
             throw new RuntimeException("Buffer is closed!");
         }
@@ -111,18 +140,47 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
         try (PostgresTransaction transaction = transactionFactory.createTransaction(false)) {
             try (Statement statement = transaction.connection().createStatement()) {
                 statement.setFetchSize(10000);
-                ResultSet rs = statement.executeQuery(String.format("SELECT key, value, ts FROM \"%s_bong_item\" ORDER BY key", topic));
+                ResultSet rs = statement.executeQuery(String.format("SELECT key, value, ts FROM \"%s_%s\" ORDER BY key", topic, "meta_item"));
+                boolean next = rs.next(); // first
+                while (next) {
+                    byte[] dbKey = rs.getBytes(1);
+                    String key = new String(dbKey);
+
+                    byte[] dbValue = rs.getBytes(2);
+                    String value = new String(dbValue);
+
+                    handleRecordCallback.accept(Map.entry(key, value), next = rs.next()); // next
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> handleRecordCallback) {
+        if (closed.get()) {
+            throw new RuntimeException("Buffer is closed!");
+        }
+        createTopicIfNotExists(topic, false);
+        try (PostgresTransaction transaction = transactionFactory.createTransaction(false)) {
+            try (Statement statement = transaction.connection().createStatement()) {
+                statement.setFetchSize(10000);
+                ResultSet rs = statement.executeQuery(String.format("SELECT key, value, ts FROM \"%s_%s\" ORDER BY key", topic, "record_item"));
                 boolean next = rs.next(); // first
                 while (next) {
                     byte[] key = rs.getBytes(1);
+                    ByteBuffer keyBuffer = ByteBuffer.wrap(key);
+                    K repositoryKey = RepositoryKey.fromByteBuffer(keyClass, keyBuffer, specification);
+
                     byte[] value = rs.getBytes(2);
-                    K repositoryKey = RepositoryKey.fromByteBuffer(keyClass, ByteBuffer.wrap(key));
                     ByteBuffer valueBuffer = ByteBuffer.wrap(value);
                     int valueByteLength = valueBuffer.getInt();
                     byte[] valueBytes = new byte[valueByteLength];
                     valueBuffer.get(valueBytes);
                     String content = new String(valueBytes, StandardCharsets.UTF_8);
-                    visit.accept(Map.entry(repositoryKey, content), next = rs.next()); // next
+
+                    handleRecordCallback.accept(Map.entry(repositoryKey, content), next = rs.next()); // next
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

@@ -1,44 +1,49 @@
 package no.ssb.dc.collection.bong.rema;
 
-import no.ssb.config.DynamicConfiguration;
-import no.ssb.dc.collection.api.config.AbstractConfiguration;
+import no.ssb.dc.collection.api.config.BaseConfiguration;
+import no.ssb.dc.collection.api.config.Name;
+import no.ssb.dc.collection.api.config.Prefix;
+import no.ssb.dc.collection.api.config.Property;
+import no.ssb.dc.collection.api.config.RequiredKeys;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
-public class SourceRemaConfiguration extends AbstractConfiguration {
+@Name("source-rema")
+@Prefix("source.")
+@RequiredKeys({
+        "source.year",
+        "source.month"
+})
+public interface SourceRemaConfiguration extends BaseConfiguration {
 
-    public SourceRemaConfiguration() {
-        this(new LinkedHashMap<>());
-    }
+    @Property("year")
+    String year();
 
-    public SourceRemaConfiguration(Map<String, String> overrideKeyValuePairs) {
-        super("source.",
-                Map.of(
-                        "root.path", "/source",
-                        "queue.capacity", "1000" // flush buffer on threshold
-                ),
-                overrideKeyValuePairs
+    @Property("month")
+    String month();
+
+    @Property("root.path")
+    String rootPath();
+
+    @Property("queue.capacity")
+    Boolean hasQueueCapacity();
+
+    @Property("queue.capacity")
+    Integer queueCapacity();
+
+    @Override
+    default Map<String, String> defaultValues() {
+        return Map.of(
+                "root.path", "/source",
+                "queue.capacity", "1000" // flush buffer on threshold
         );
     }
 
-    @Override
-    public String name() {
-        return "source-rema";
+    static SourceRemaConfiguration create() {
+        return BaseConfiguration.create(SourceRemaConfiguration.class);
     }
 
-    @Override
-    public Set<String> requiredKeys() {
-        return Set.of(
-                "source.year",
-                "source.month"
-        );
+    static SourceRemaConfiguration create(Map<String, String> overrideValues) {
+        return BaseConfiguration.create(SourceRemaConfiguration.class, overrideValues);
     }
-
-    @Override
-    public DynamicConfiguration asDynamicConfiguration() {
-        return configuration;
-    }
-
 }

@@ -1,47 +1,44 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.internal.DynamicProxy;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
-public class SourceLmdbConfiguration extends AbstractConfiguration {
+@Name("source-lmdb")
+@Prefix("source.")
+@RequiredKeys({
+        "source.lmdb.path",
+        "source.rawdata.topic",
+        "source.csv.filepath",
+        "source.csv.files"
+})
+public interface SourceLmdbConfiguration extends SourceConfiguration {
 
-    public SourceLmdbConfiguration() {
-        this(new LinkedHashMap<>());
-    }
+    @Property("lmdb.path")
+    String lmdbPath();
 
-    public SourceLmdbConfiguration(Map<String, String> overrideKeyValuePairs) {
-        super("source.",
-                Map.of(
-                        "lmdb.sizeInMb", "500",
-                        "queue.poolSize", "25000", // flush buffer on threshold
-                        "queue.keyBufferSize", "511",
-                        "queue.valueBufferSize", "2048"
-                ),
-                overrideKeyValuePairs
+    @Property("lmdb.sizeInMb")
+    Boolean hasLmdbSizeInMb();
+
+    @Property("lmdb.sizeInMb")
+    Integer lmdbSizeInMb();
+
+    @Override
+    default Map<String, String> defaultValues() {
+        return Map.of(
+                "queue.poolSize", "25000", // flush buffer on threshold
+                "queue.keyBufferSize", "511",
+                "queue.valueBufferSize", "2048",
+                "lmdb.sizeInMb", "500"
         );
     }
 
-    @Override
-    public String name() {
-        return "source-lmdb";
+    static SourceLmdbConfiguration create() {
+        return new DynamicProxy<>(SourceLmdbConfiguration.class).instance();
     }
 
-    @Override
-    public Set<String> requiredKeys() {
-        return Set.of(
-                "source.lmdb.path",
-                "source.rawdata.topic",
-                "source.csv.filepath",
-                "source.csv.files"
-        );
-    }
-
-    @Override
-    public DynamicConfiguration asDynamicConfiguration() {
-        return configuration;
+    static SourceLmdbConfiguration create(Map<String, String> overrideValues) {
+        return new DynamicProxy<>(SourceLmdbConfiguration.class, overrideValues).instance();
     }
 
 }

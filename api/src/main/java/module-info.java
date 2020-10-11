@@ -12,12 +12,19 @@ module rawdata.collection.api {
     requires org.slf4j;
     requires de.huxhorn.sulky.ulid;
 
+    requires commons.csv;
+    requires org.apache.commons.text;
+
     requires lmdbjava;
     requires org.objectweb.asm;
 
     requires java.sql;
     requires com.zaxxer.hikari;
     requires org.postgresql.jdbc;
+
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.annotation;
+    requires com.fasterxml.jackson.dataformat.yaml;
 
     opens no.ssb.dc.collection.api.postgres.init;
 
@@ -26,6 +33,7 @@ module rawdata.collection.api {
     exports no.ssb.dc.collection.api.jdbc;
     exports no.ssb.dc.collection.api.source;
     exports no.ssb.dc.collection.api.target;
+    exports no.ssb.dc.collection.api.worker;
     exports no.ssb.dc.collection.api.utils;
 
 }

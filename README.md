@@ -12,24 +12,34 @@ Secondly, the rawdata producer generates Avro Rawdata files that is uploaded to 
 
 * Client - THe CLI Application
 * API - Common files parsing, database and producer capabilities
-* Producer modules: Bong and KAG (Karakterer Avsluttende Grunnskole)
-
-## How it works
-
-The Bong data is stored as CSV and XML files. Ie. the NorgesGruppen (NG) Bong item lines are organized
-in random order. Consequently, there is no natural grouping of bong items. The easiest way to provide
-a natural grouping, is to compose a Primary Key that is sortable, and let the database backend handle
-sequenced ordering. 
-
-The RepositoryKey is declared as:
-
-* Store ID
-* Bong ID
-* Timestamp
-* Unique sequence number (ordinal)
-
-Henceforth, bong key is sortable and enables each bong to be read sequentially.
 
 ## CLI
+
+```
+Usage:
+
+bin/rawdata-collection.sh [options]
+
+    -a | --action                  <action>                      (mandatory)
+    -t | --target                  <target>                      (optional)
+    -b | --bucket                  <bucket name>                 (mandatory)
+   -sa | --service-account         <gcs service account json>    (optional)
+   -to | --topic                   <rawdata topic>               (mandatory)
+  -msf | --mount-secret-folder     <mount secrets folder>        (optional)
+  -rsf | --rawdata-secret-file     <encryption secrets>          (mandatory)
+  -mcf | --mount-conf-folder       <mount conf folder>           (optional)
+   -pf | --property-file           <property file>               (optional)
+  -msd | --mount-spec-folder       <mount spec folder>           (optional)
+   -sf | --spec-file               <sepc file>                   (optional)
+  -mif | --mount-source-folder     <mount import source folder>  (required)
+  -csv | --csv-files               <import csv files (use: ,)>   (optional)
+  -mef | --mount-export-folder     <mount avro export folder>    (optional)
+    -h | --help
+
+Example:
+
+  bin/rawdata-collection.sh -a test-gcs-write -msf "$HOME/secrets" -sa sa_secret.json -b ssb-rawdata-prod-bucket -to test-topic
+
+```
 
 Please refer to the `client/bin/` and read `~/bin/rawdata-collection.sh` for usage.

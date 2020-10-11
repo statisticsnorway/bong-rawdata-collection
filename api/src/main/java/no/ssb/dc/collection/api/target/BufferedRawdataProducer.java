@@ -1,6 +1,6 @@
 package no.ssb.dc.collection.api.target;
 
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.TargetConfiguration;
 import no.ssb.dc.collection.api.utils.FixedThreadPool;
 import no.ssb.rawdata.api.RawdataMessage;
 import no.ssb.rawdata.api.RawdataProducer;
@@ -23,19 +23,17 @@ public class BufferedRawdataProducer implements AutoCloseable {
     final FixedThreadPool threadPool;
     final LinkedBlockingDeque<RawdataMessage> queue;
     final RawdataProducer rawdataProducer;
-    private final EncryptionClient encryptionClient;
-    private final byte[] secretKey;
+    final EncryptionClient encryptionClient;
+    final byte[] secretKey;
 
-    public BufferedRawdataProducer(DynamicConfiguration targetConfiguration, int queueBufferSize, RawdataProducer rawdataProducer) {
+    public BufferedRawdataProducer(TargetConfiguration targetConfiguration, int queueBufferSize, RawdataProducer rawdataProducer) {
         Objects.requireNonNull(rawdataProducer);
         this.rawdataProducer = rawdataProducer;
         threadPool = FixedThreadPool.newInstance();
         queue = new LinkedBlockingDeque<>(queueBufferSize);
 
-        final char[] encryptionKey = targetConfiguration.evaluateToString("rawdata.encryptionKey") != null ?
-                targetConfiguration.evaluateToString("rawdata.encryptionKey").toCharArray() : null;
-        final byte[] encryptionSalt = targetConfiguration.evaluateToString("rawdata.encryptionSalt") != null ?
-                targetConfiguration.evaluateToString("rawdata.encryptionSalt").getBytes() : null;
+        final char[] encryptionKey = targetConfiguration.hasRawdataEncryptionKey() ? targetConfiguration.rawdataEncryptionKey().toCharArray() : null;
+        final byte[] encryptionSalt = targetConfiguration.hasRawdataEncryptionSalt() ? targetConfiguration.rawdataEncryptionSalt().getBytes() : null;
 
         this.encryptionClient = new EncryptionClient();
 
@@ -46,6 +44,10 @@ public class BufferedRawdataProducer implements AutoCloseable {
         } else {
             this.secretKey = null;
         }
+    }
+
+    public RawdataProducer producer() {
+        return rawdataProducer;
     }
 
     public void produce(RawdataMessage message) {

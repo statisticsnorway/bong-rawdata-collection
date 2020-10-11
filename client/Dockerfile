@@ -35,6 +35,7 @@ RUN mkdir -p /ld_lib \
 COPY target/rawdata-collection-client-*.jar $APP_HOME/lib
 
 RUN mkdir -p /conf && \
+    mkdir -p /spec && \
     mkdir -p /source && \
     mkdir -p /database && \
     mkdir -p /avro/source && \
@@ -51,6 +52,6 @@ WORKDIR $APP_HOME
 
 EXPOSE 9992
 
-VOLUME ["/conf", "/source", "/database", "/avro", "/export"]
+VOLUME ["/conf", "/spec", "/source", "/database", "/avro", "/export"]
 
 CMD ["/run.sh"]

@@ -19,12 +19,8 @@ module rawdata.collection.bong {
     requires org.postgresql.jdbc;
     requires com.zaxxer.hikari;
 
-    opens no.ssb.dc.collection.bong.ng; // reflection from Commons.RepositoryKey
-    opens no.ssb.dc.collection.bong.coop; // reflection from Commons.RepositoryKey
     opens no.ssb.dc.collection.bong.rema; // reflection from Commons.RepositoryKey
 
-    exports no.ssb.dc.collection.bong.ng;
-    exports no.ssb.dc.collection.bong.coop;
     exports no.ssb.dc.collection.bong.rema;
 
 }

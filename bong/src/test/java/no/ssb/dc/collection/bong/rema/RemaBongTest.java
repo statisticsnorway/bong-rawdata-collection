@@ -23,14 +23,14 @@ class RemaBongTest {
 
     @BeforeAll
     static void beforeAll() {
-        sourceConfiguration = new SourceRemaConfiguration(Map.of(
+        sourceConfiguration = SourceRemaConfiguration.create(Map.of(
                 "source.root.path", Paths.get(".").toAbsolutePath().normalize().resolve("data").toString(),
                 "source.queue.capacity", "100",
                 "source.year", "2018",
                 "source.month", "10"
         ));
 
-        targetConfiguration = new LocalFileSystemConfiguration(Map.of(
+        targetConfiguration = LocalFileSystemConfiguration.create(Map.of(
                 "target.rawdata.topic", "bong-rema-target-test",
                 "target.local-temp-folder", "target/_tmp_avro_",
                 "target.filesystem.storage-folder", "target/rawdata-store"

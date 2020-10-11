@@ -22,6 +22,8 @@ $0 [options]
   -rsf | --rawdata-secret-file     <encryption secrets>          (mandatory)
   -mcf | --mount-conf-folder       <mount conf folder>           (optional)
    -pf | --property-file           <property file>               (optional)
+  -msd | --mount-spec-folder       <mount spec folder>           (optional)
+   -sf | --spec-file               <sepc file>                   (optional)
   -mif | --mount-source-folder     <mount import source folder>  (required)
   -csv | --csv-files               <import csv files (use: ,)>   (optional)
   -mef | --mount-export-folder     <mount avro export folder>    (optional)
@@ -76,6 +78,14 @@ while [ "$1" != "" ]; do
   -pf | --property-file)
     shift
     PROPERTY_FILE=$1
+    ;;
+  -msd | --mount-spec-folder)
+    shift
+    LOCAL_SPEC_FOLDER=$1
+    ;;
+  -sf | --spec-file)
+    shift
+    SPECIFICATION_FILE=$1
     ;;
   -mif | --mount-source-folder)
     shift

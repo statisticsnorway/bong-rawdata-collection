@@ -2,7 +2,7 @@ package no.ssb.dc.collection.api.jdbc;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.SourcePostgresConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,21 +18,15 @@ public class PostgresDataSource {
     private static final Logger LOG = LoggerFactory.getLogger(PostgresDataSource.class);
 
     // https://github.com/brettwooldridge/HikariCP
-    public static HikariDataSource openPostgresDataSource(DynamicConfiguration configuration) {
-        String postgresDbDriverHost = configuration.evaluateToString("postgres.driver.host");
-        String postgresDbDriverPort = configuration.evaluateToString("postgres.driver.port");
-        String postgresDbDriverUser = configuration.evaluateToString("postgres.driver.user");
-        String postgresDbDriverPassword = configuration.evaluateToString("postgres.driver.password");
-        String postgresDbDriverDatabase = configuration.evaluateToString("postgres.driver.database");
-
+    public static HikariDataSource openPostgresDataSource(SourcePostgresConfiguration configuration) {
         LOG.info("Configured database: postgres");
         Properties props = new Properties();
         props.setProperty("dataSourceClassName", "org.postgresql.ds.PGSimpleDataSource");
-        props.setProperty("dataSource.serverName", postgresDbDriverHost);
-        props.setProperty("dataSource.portNumber", postgresDbDriverPort);
-        props.setProperty("dataSource.user", postgresDbDriverUser);
-        props.setProperty("dataSource.password", postgresDbDriverPassword);
-        props.setProperty("dataSource.databaseName", postgresDbDriverDatabase);
+        props.setProperty("dataSource.serverName", configuration.postgresDriverHost());
+        props.setProperty("dataSource.portNumber", configuration.postgresDriverPort());
+        props.setProperty("dataSource.user", configuration.postgresDriverUser());
+        props.setProperty("dataSource.password", configuration.postgresDriverPassword());
+        props.setProperty("dataSource.databaseName", configuration.postgresDriverDatabase());
         props.put("dataSource.logWriter", new PrintWriter(System.out));
 
         HikariConfig config = new HikariConfig(props);
@@ -69,7 +63,9 @@ public class PostgresDataSource {
             Connection conn = transactionFactory.dataSource().getConnection();
             conn.beginRequest();
 
-            try (Scanner s = new Scanner(initSQL.replaceAll("TOPIC", topic))) {
+            String sql = initSQL.replaceAll("TOPIC", topic);
+            //LOG.trace("initSQL: {}", sql);
+            try (Scanner s = new Scanner(sql)) {
                 s.useDelimiter("(;(\r)?\n)|(--\n)");
                 try (Statement st = conn.createStatement()) {
                     try {
@@ -81,6 +77,7 @@ public class PostgresDataSource {
                             }
 
                             if (line.trim().length() > 0) {
+                                //LOG.trace("line: {}", line);
                                 st.execute(line);
                             }
                         }

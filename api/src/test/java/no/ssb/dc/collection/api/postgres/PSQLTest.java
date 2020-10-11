@@ -25,13 +25,13 @@ public class PSQLTest {
     @Disabled
     @Test
     void initDbAndWrite() throws SQLException {
-        SourcePostgresConfiguration psqlConfiguration = new SourcePostgresConfiguration(
+        SourcePostgresConfiguration psqlConfiguration = SourcePostgresConfiguration.create(
                 Map.of("database.rawdata.topic", "test-topic")
         );
 
-        try (HikariDataSource dataSource = PostgresDataSource.openPostgresDataSource(psqlConfiguration.asDynamicConfiguration())) {
+        try (HikariDataSource dataSource = PostgresDataSource.openPostgresDataSource(psqlConfiguration)) {
             PostgresTransactionFactory transactionFactory = new PostgresTransactionFactory(dataSource);
-            String topic = psqlConfiguration.asDynamicConfiguration().evaluateToString("rawdata.topic");
+            String topic = psqlConfiguration.topic();
             createTopicIfNotExists(transactionFactory, topic, true);
             try (Transaction tx = transactionFactory.createTransaction(false)) {
                 PreparedStatement ps = tx.connection().prepareStatement(String.format("INSERT INTO \"%s_bong_item\" (key, value, ts) VALUES (?, ?, ?)", topic));

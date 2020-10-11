@@ -1,35 +1,30 @@
 package no.ssb.dc.collection.client;
 
-import no.ssb.config.DynamicConfiguration;
-import no.ssb.config.StoreBasedDynamicConfiguration;
+import no.ssb.dc.collection.api.config.BootstrapConfiguration;
 import no.ssb.dc.collection.api.config.GCSConfiguration;
 import no.ssb.dc.collection.api.config.LocalFileSystemConfiguration;
 import no.ssb.dc.collection.api.config.SourceLmdbConfiguration;
+import no.ssb.dc.collection.api.config.SourceNoDbConfiguration;
 import no.ssb.dc.collection.api.config.SourcePostgresConfiguration;
 import no.ssb.dc.collection.api.config.TargetConfiguration;
-import no.ssb.dc.collection.bong.coop.CoopPostgresBongWorker;
-import no.ssb.dc.collection.bong.ng.NGLmdbBongWorker;
-import no.ssb.dc.collection.bong.ng.NGPostgresBongWorker;
-import no.ssb.dc.collection.bong.ng.RawdataGCSTestWrite;
+import no.ssb.dc.collection.api.target.RawdataGCSTestWrite;
+import no.ssb.dc.collection.api.worker.CsvDynamicWorker;
+import no.ssb.dc.collection.api.worker.CsvSpecification;
+import no.ssb.dc.collection.api.worker.SpecificationDeserializer;
 import no.ssb.dc.collection.bong.rema.RemaBongWorker;
 import no.ssb.dc.collection.bong.rema.SourceRemaConfiguration;
-import no.ssb.dc.collection.kag.BefolkningWorker;
-import no.ssb.dc.collection.kag.FagkodeWorker;
-import no.ssb.dc.collection.kag.GsiWorker;
-import no.ssb.dc.collection.kag.KarakterWorker;
-import no.ssb.dc.collection.kag.NasjonaleProverWorker;
-import no.ssb.dc.collection.kag.NudbWorker;
-import no.ssb.dc.collection.kag.NuskatWorker;
-import no.ssb.dc.collection.kag.OmkodingskatalogWorker;
-import no.ssb.dc.collection.kag.ResultatWorker;
-import no.ssb.dc.collection.kag.SkolekatalogWorker;
-import no.ssb.dc.collection.kag.StatistikkWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -43,162 +38,49 @@ public class Application implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
     static final String DEBUG_CONFIG_OVERRIDE = "rawdata-client-debug-config-override";
 
-    private static Collection<Command> initializeCommands(Map<String, String> configMap, Callback printCommands) {
-        boolean useGCSProvider = configMap.containsKey("target.rawdata.client.provider") && configMap.get("target.rawdata.client.provider").equals("gcs");
-        boolean printHelp = configMap.containsKey("action") && configMap.get("action").equals("help") && (!configMap.containsKey("target") || configMap.get("target") == null || "".equals(configMap.get("target")));
-        TargetConfiguration targetConfiguration = !printHelp ?
-                (useGCSProvider ? new GCSConfiguration(configMap) : new LocalFileSystemConfiguration(configMap)) :
-                null;
+    private static Collection<Command> initializeCommands(BootstrapConfiguration configuration, Map<String, String> overrideConfig, Callback printCommands) {
+        TargetConfiguration targetConfiguration = configuration.isHelpAction() ?
+                null :
+                (configuration.useGCSConfiguration() ? GCSConfiguration.create(overrideConfig) : LocalFileSystemConfiguration.create(overrideConfig));
+
+        CsvSpecification specification = getSpecification(configuration);
+
         return List.of(
                 new Command("test-gcs-write", null, () -> {
                     LOG.info("Copy dummy rawdata to bucket (ping test).");
-                    new RawdataGCSTestWrite().produceRawdataToGCS(targetConfiguration);
+                    new RawdataGCSTestWrite().produceRawdataToGCS(Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")));
                 }),
-                new Command("prepare", "ng-lmdb", () -> {
-                    try (var worker = new NGLmdbBongWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "ng-lmdb", () -> {
-                    try (var worker = new NGLmdbBongWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
+                new Command("produce", "dynamic-no-cache", () -> {
+                    try (var worker = new CsvDynamicWorker(SourceNoDbConfiguration.create(), targetConfiguration, specification)) {
                         worker.produce();
                     }
                 }),
-                new Command("prepare", "ng-postgres", () -> {
-                    try (var worker = new NGPostgresBongWorker(new SourcePostgresConfiguration(), targetConfiguration)) {
+                new Command("prepare", "dynamic-lmdb", () -> {
+                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(), targetConfiguration, specification)) {
                         worker.prepare();
                     }
                 }),
-                new Command("produce", "ng-postgres", () -> {
-                    try (var worker = new NGPostgresBongWorker(new SourcePostgresConfiguration(), targetConfiguration)) {
+                new Command("produce", "dynamic-lmdb", () -> {
+                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(), targetConfiguration, specification)) {
                         worker.produce();
                     }
                 }),
-                new Command("prepare", "coop-postgres", () -> {
-                    try (var worker = new CoopPostgresBongWorker(new SourcePostgresConfiguration(), targetConfiguration)) {
+                new Command("prepare", "dynamic-postgres", () -> {
+                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(), targetConfiguration, specification)) {
                         worker.prepare();
                     }
                 }),
-                new Command("produce", "coop-postgres", () -> {
-                    try (var worker = new CoopPostgresBongWorker(new SourcePostgresConfiguration(), targetConfiguration)) {
+                new Command("produce", "dynamic-postgres", () -> {
+                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(), targetConfiguration, specification)) {
                         worker.produce();
                     }
                 }),
+                // TODO deprecate custom workers
                 new Command("produce", "rema-fs", () -> {
-                    try (RemaBongWorker worker = new RemaBongWorker(new SourceRemaConfiguration(), targetConfiguration)) {
+                    try (RemaBongWorker worker = new RemaBongWorker(SourceRemaConfiguration.create(), Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")))) {
                         if (!worker.validate()) {
                             return;
                         }
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-karakter-lmdb", () -> {
-                    try (var worker = new KarakterWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-karakter-lmdb", () -> {
-                    try (var worker = new KarakterWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-resultat-lmdb", () -> {
-                    try (var worker = new ResultatWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-resultat-lmdb", () -> {
-                    try (var worker = new ResultatWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-fagkode-lmdb", () -> {
-                    try (var worker = new FagkodeWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-fagkode-lmdb", () -> {
-                    try (var worker = new FagkodeWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-statistikk-lmdb", () -> {
-                    try (var worker = new StatistikkWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-statistikk-lmdb", () -> {
-                    try (var worker = new StatistikkWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-nuskat-lmdb", () -> {
-                    try (var worker = new NuskatWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-nuskat-lmdb", () -> {
-                    try (var worker = new NuskatWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-skolekatalog-lmdb", () -> {
-                    try (var worker = new SkolekatalogWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-skolekatalog-lmdb", () -> {
-                    try (var worker = new SkolekatalogWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-omkodingskatalog-lmdb", () -> {
-                    try (var worker = new OmkodingskatalogWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-omkodingskatalog-lmdb", () -> {
-                    try (var worker = new OmkodingskatalogWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-gsi-lmdb", () -> {
-                    try (var worker = new GsiWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-gsi-lmdb", () -> {
-                    try (var worker = new GsiWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-nudb-lmdb", () -> {
-                    try (var worker = new NudbWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-nudb-lmdb", () -> {
-                    try (var worker = new NudbWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-befolkning-lmdb", () -> {
-                    try (var worker = new BefolkningWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-befolkning-lmdb", () -> {
-                    try (var worker = new BefolkningWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.produce();
-                    }
-                }),
-                new Command("prepare", "kag-nasjonale-prover-lmdb", () -> {
-                    try (var worker = new NasjonaleProverWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
-                        worker.prepare();
-                    }
-                }),
-                new Command("produce", "kag-nasjonale-prover-lmdb", () -> {
-                    try (var worker = new NasjonaleProverWorker(new SourceLmdbConfiguration(), targetConfiguration)) {
                         worker.produce();
                     }
                 }),
@@ -206,21 +88,44 @@ public class Application implements Runnable {
         );
     }
 
-    private final DynamicConfiguration configuration;
+    static CsvSpecification getSpecification(BootstrapConfiguration configuration) {
+        SpecificationDeserializer deserializer = new SpecificationDeserializer();
+        try {
+            if (!(configuration.hasSpecificationFilePath() && configuration.hasSpecificationFile())) {
+                return null;
+            }
+
+            Path specificationFilenamePath = Paths.get(configuration.specificationFilePath()).toAbsolutePath().normalize().resolve(configuration.specificationFile());
+            if (!Files.isReadable(specificationFilenamePath)) {
+                throw new IllegalStateException("Specification file not found: " + specificationFilenamePath.toString());
+            }
+
+            return deserializer.parse(Files.readString(specificationFilenamePath));
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private final BootstrapConfiguration configuration;
     private final Collection<Command> commands;
     private final AtomicBoolean completed = new AtomicBoolean();
 
-    private Application(DynamicConfiguration configuration) {
+    private Application(BootstrapConfiguration configuration) {
+        this(configuration, Collections.emptyMap());
+    }
+
+    private Application(BootstrapConfiguration configuration, Map<String, String> overrideConfig) {
         this.configuration = configuration;
-        this.commands = initializeCommands(configuration.asMap(), this::printCommands);
+        this.commands = initializeCommands(configuration, overrideConfig, this::printCommands);
     }
 
     boolean isAction(String action) {
-        return configuration.evaluateToString("action") != null && configuration.evaluateToString("action").equals(action);
+        return configuration.hasAction() && configuration.action().equals(action);
     }
 
     boolean isTarget(String target) {
-        return configuration.evaluateToString("target") != null && configuration.evaluateToString("target").equals(target);
+        return configuration.hasTarget() && configuration.target().equals(target);
     }
 
     void printCommands() {
@@ -235,7 +140,7 @@ public class Application implements Runnable {
     public void run() {
         boolean valid = false;
 
-        LOG.info("Rawdata Client Provider: {}", configuration.evaluateToString("target.rawdata.client.provider"));
+        LOG.info("Rawdata Client Provider: {}", configuration.rawdataClientProvider());
 
         for (Command command : commands) {
             if ((isAction(command.action) && command.target == null) || (isAction(command.action) && isTarget(command.target))) {
@@ -252,8 +157,12 @@ public class Application implements Runnable {
         }
     }
 
-    static Application create(DynamicConfiguration configuration) {
+    static Application create(BootstrapConfiguration configuration) {
         return new Application(configuration);
+    }
+
+    static Application create(BootstrapConfiguration configuration, Map<String, String> overrideConfig) {
+        return new Application(configuration, overrideConfig);
     }
 
     @FunctionalInterface
@@ -276,11 +185,7 @@ public class Application implements Runnable {
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
 
-        DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
-                .environment("BONG_")
-                .systemProperties()
-                .build();
-
+        BootstrapConfiguration configuration = BootstrapConfiguration.create();
 
         Application application = Application.create(configuration);
         Thread thread = new Thread(application);

@@ -33,8 +33,10 @@ Variables:
   BUCKET_NAME          gcs bucket name            (mandatory)
   TOPIC_NAME           rawdata topic              (mandatory)
   PROPERTY_FILE        filename under './conf'    (mandatory)
+  SPECIFICATION_FILE   filename under './spec'    (optional)
   LOCAL_SECRET_FOLDER  local secret mount folder  (mandatory)
   LOCAL_CONF_FOLDER    local conf mount folder    (mandatory)
+  LOCAL_SPEC_FOLDER    local spec mount folder    (optional)
   LOCAL_SOURCE_FOLDER  local import folder        (mandatory)
   CSV_FILES            import csv files           (optional)
   LOCAL_AVRO_FOLDER    local avro export folder   (optional: overrides rawdata client provider to filesystem)
@@ -93,6 +95,11 @@ validate() {
     exit 0
   fi
 
+  if [ -n "$LOCAL_SPEC_FOLDER" ] && [ ! -d "$LOCAL_SPEC_FOLDER" ]; then
+    echo "Local conf directory '$LOCAL_SPEC_FOLDER' NOT found!"
+    exit 0
+  fi
+
   if [ -n "$LOCAL_SOURCE_FOLDER" ] && [ ! -d "$LOCAL_SOURCE_FOLDER" ]; then
     echo "Local source import directory NOT found!"
     exit 0
@@ -128,7 +135,7 @@ evaluateDockerEnvironmentVariables() {
 
   while read -r line; do
     ENV_VAR=$(eval echo "$line")
-    if [[ ! "$ENV_VAR" = "#*" ]] && [[ -n "$ENV_VAR" ]]; then
+    if [[ ! "$ENV_VAR" == "#*" ]] && [[ -n "$ENV_VAR" ]]; then
       log "ENV_VAR: $ENV_VAR"
       DOCKER_ENV_VARS="$DOCKER_ENV_VARS-e BONG_${ENV_VAR} "
     fi
@@ -183,6 +190,7 @@ run() {
     ${DOCKER_ENV_VARS} \
     -v "$LOCAL_SECRET_FOLDER":/secret:Z \
     -v "$LOCAL_CONF_FOLDER":/conf:Z \
+    -v "$LOCAL_SPEC_FOLDER":/spec:Z \
     -v "$LOCAL_SOURCE_FOLDER":/source:Z \
     -v "$LOCAL_DATABASE_VOLUME":/database \
     -v "$LOCAL_AVRO_VOLUME":/avro \

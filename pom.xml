@@ -50,7 +50,6 @@
     <modules>
         <module>api</module>
         <module>bong</module>
-        <module>kag</module>
         <module>client</module>
     </modules>
 

@@ -1,5 +1,7 @@
 package no.ssb.dc.collection.api.source;
 
+import no.ssb.dc.collection.api.worker.CsvDynamicKey;
+import no.ssb.dc.collection.api.worker.CsvSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +9,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +20,7 @@ abstract public class GenericKey implements RepositoryKey {
 
     private final static Logger LOG = LoggerFactory.getLogger(GenericKey.class);
 
-    private final Map<String, Object> values;
+    protected final Map<String, Object> values;
 
     public GenericKey() {
         values = new LinkedHashMap<>();
@@ -49,6 +52,11 @@ abstract public class GenericKey implements RepositoryKey {
 
     @Override
     public <R extends RepositoryKey> R fromByteBuffer(ByteBuffer keyBuffer) {
+        return fromByteBuffer(null, keyBuffer);
+    }
+
+    @Override
+    public <R extends RepositoryKey> R fromByteBuffer(CsvSpecification specification, ByteBuffer keyBuffer) {
         Objects.requireNonNull(keyBuffer);
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
         for (Map.Entry<String, Class<?>> entry : this.keys().entrySet()) {
@@ -66,17 +74,28 @@ abstract public class GenericKey implements RepositoryKey {
                 Integer intValue = keyBuffer.getInt();
                 values.put(entry.getKey(), intValue);
 
+            } else if (entry.getValue() == Date.class) {
+                Long longValue = keyBuffer.getLong();
+                values.put(entry.getKey(), longValue);
+
             } else {
                 throw new UnsupportedOperationException();
             }
         }
-        return (R) GenericKey.create(this.getClass(), values);
+        if (specification == null) {
+            return (R) GenericKey.create(this.getClass(), values);
+        } else {
+            return (R) CsvDynamicKey.create(specification, values);
+        }
     }
 
     @Override
     public ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
         Objects.requireNonNull(allocatedBuffer);
         for (Map.Entry<String, Class<?>> entry : keys().entrySet()) {
+            if (!values.containsKey(entry.getKey())) {
+                throw new IllegalStateException("Missing GenericKey value for: " + entry.getKey());
+            }
             if (entry.getValue() == String.class) {
                 String stringValue = (String) values.get(entry.getKey());
                 byte[] stringBytes = stringValue.getBytes(StandardCharsets.UTF_8);
@@ -91,8 +110,12 @@ abstract public class GenericKey implements RepositoryKey {
                 Integer intValue = (Integer) values.get(entry.getKey());
                 allocatedBuffer.putInt(intValue);
 
+            } else if (entry.getValue() == Date.class) {
+                Date dateValue = (Date) values.get(entry.getKey());
+                allocatedBuffer.putLong(dateValue.getTime());
+
             } else {
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException("Value type not supported: " + entry.getKey());
             }
         }
         return allocatedBuffer.flip();
@@ -100,7 +123,6 @@ abstract public class GenericKey implements RepositoryKey {
 
     @Override
     public String toPosition() {
-        Objects.requireNonNull(positionKeys());
         return positionKeys().stream().map(key -> values.get(key).toString()).collect(Collectors.joining("."));
     }
 

@@ -1,0 +1,60 @@
+#
+# Supported backends are: "no-cache", "lmdb" and "postgres".
+#
+# A rawdata-message is an autonomous payload of data. That means each message contains metadata and data and can be
+# consumed by the client as a standalone entity.
+#
+# The No-cache backend will process each line in the CSV file and commit them as single messages.
+#
+# Grouping of message data is supported by the Lmdb and Postgres backends. The purpose of a group is to split
+# the csv-files into logical messages, so that data in which belongs to an entity is stored as a grouped message.
+#
+# Please note: Lmdb should only be used for CSV files that contains less 25 million records. If you surpass that
+# threshold you should use Postgres.
+#
+backend: "no-cache"
+
+#
+# Source data description
+#
+metadata:
+  - source: "SSB internal (SAS)"
+  - dataset: "some-sas-dataset"
+  - tag: "2019-2020"
+  - description: "About the dataset"
+
+#
+# Describe files to be processed. Use (,) comma to separate multiple files.
+#
+fileDescriptor:
+  - delimiter: ";"
+  - charset: "ASCII"
+  - contentType: "text/csv"
+  - files: "generic.csv"
+
+#
+# Each rawdata-message is published on a position. The PositionKeys is determines a unique position on the rawdata-stream
+# Configure the columns (ordered) that is part of the unique PositionKey. The PositionKey refers to either csv-columns
+# or functions that auto-generates a unique id.
+#
+# Allowed functions: SEQUENCE, ULID, UUID
+#
+positionKeys:
+  - column: "a"
+  - function: ULID
+
+#
+# The Lmdb and Postgres backend offers pre-processing of source data, so that grouped messages can be produced.
+#
+# Allowed types: String, Integer, Long and Date
+#
+groupByKeys:
+  - column: "a"
+    type: "String"
+  - column: "b"
+    type: "String"
+  - column: "c"
+    type: "Date"
+    format: "MM/dd/yyyy HH:mm:ss"
+
+

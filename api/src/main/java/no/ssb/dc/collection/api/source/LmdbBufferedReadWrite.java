@@ -1,7 +1,8 @@
 package no.ssb.dc.collection.api.source;
 
-import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.collection.api.config.SourceConfiguration;
 import no.ssb.dc.collection.api.utils.DirectByteBufferPool;
+import no.ssb.dc.collection.api.worker.CsvSpecification;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Txn;
@@ -20,17 +21,21 @@ public class LmdbBufferedReadWrite implements BufferedReadWrite {
     private final DirectByteBufferPool keyPool;
     private final DirectByteBufferPool valuePool;
     private final LmdbEnvironment lmdbEnvironment;
-    private final Dbi<ByteBuffer> dbi;
+    private final CsvSpecification specification;
+    private final Dbi<ByteBuffer> metaDbi;
+    private final Dbi<ByteBuffer> recordDbi;
 
-    public LmdbBufferedReadWrite(DynamicConfiguration configuration, LmdbEnvironment lmdbEnvironment) {
+    public LmdbBufferedReadWrite(SourceConfiguration configuration, LmdbEnvironment lmdbEnvironment, CsvSpecification specification) {
         this.lmdbEnvironment = lmdbEnvironment;
-        int queuePoolSize = configuration.evaluateToInt("queue.poolSize");
-        int keySize = configuration.evaluateToString("queue.keyBufferSize") == null ? 511 : configuration.evaluateToInt("queue.keyBufferSize");
-        int valueSize = configuration.evaluateToString("queue.valueBufferSize") == null ? 0 : configuration.evaluateToInt("queue.valueBufferSize");
+        this.specification = specification;
+        int queuePoolSize = configuration.queuePoolSize();
+        int keySize = configuration.hasQueueKeyBufferSize() ? 511 : configuration.queueKeyBufferSize();
+        int valueSize = configuration.hasQueueValueBufferSize() ? 2048 : configuration.queueValueBufferSize();
         this.bufferQueue = new LinkedBlockingDeque<>(queuePoolSize);
         this.keyPool = new DirectByteBufferPool(queuePoolSize + 1, keySize);
         this.valuePool = new DirectByteBufferPool(queuePoolSize + 1, valueSize);
-        this.dbi = lmdbEnvironment.open();
+        this.metaDbi = lmdbEnvironment.openMetaDb();
+        this.recordDbi = lmdbEnvironment.openRecordDb();
     }
 
     @Override
@@ -39,11 +44,35 @@ public class LmdbBufferedReadWrite implements BufferedReadWrite {
             Map.Entry<ByteBuffer, ByteBuffer> buffer;
             while ((buffer = bufferQueue.poll()) != null) {
                 try {
-                    dbi.put(txn, buffer.getKey(), buffer.getValue());
+                    recordDbi.put(txn, buffer.getKey(), buffer.getValue());
                 } finally {
                     keyPool.release(buffer.getKey());
                     valuePool.release(buffer.getValue());
                 }
+            }
+            txn.commit();
+        }
+    }
+
+    @Override
+    public void writeHeader(String key, String value) {
+        try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnWrite()) {
+            ByteBuffer keyBuffer = keyPool.acquire();
+            byte[] keyBytes = key.getBytes();
+            keyBuffer.putInt(key.length());
+            keyBuffer.put(keyBytes);
+            keyBuffer.flip();
+
+            byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+            ByteBuffer valueBuffer = ByteBuffer.allocateDirect(valueBytes.length + 8);
+            valueBuffer.putInt(valueBytes.length);
+            valueBuffer.put(valueBytes);
+            valueBuffer.flip();
+
+            try {
+                metaDbi.put(txn, keyBuffer, valueBuffer);
+            } finally {
+                keyPool.release(keyBuffer);
             }
             txn.commit();
         }
@@ -68,19 +97,45 @@ public class LmdbBufferedReadWrite implements BufferedReadWrite {
     }
 
     @Override
-    public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> visit) {
+    public void readHeader(BiConsumer<Map.Entry<String, String>, Boolean> handleRecordCallback) {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
-            Iterator<CursorIterable.KeyVal<ByteBuffer>> it = dbi.iterate(txn).iterator();
+            Iterator<CursorIterable.KeyVal<ByteBuffer>> it = metaDbi.iterate(txn).iterator();
             while (it.hasNext()) {
                 CursorIterable.KeyVal<ByteBuffer> next = it.next();
+
                 ByteBuffer keyBuffer = next.key();
-                K repositoryKey = RepositoryKey.fromByteBuffer(keyClass, keyBuffer);
+                int keyLength = keyBuffer.getInt();
+                byte[] keyBytes = new byte[keyLength];
+                keyBuffer.get(keyBytes);
+                String key = new String(keyBytes);
+
                 ByteBuffer valueBuffer = next.val();
-                int contentLength = valueBuffer.getInt();
+                int valueLength = valueBuffer.getInt();
+                byte[] valueBytes = new byte[valueLength];
+                valueBuffer.get(valueBytes);
+                String value = new String(valueBytes);
+                handleRecordCallback.accept(Map.entry(key, value), it.hasNext());
+            }
+        }
+    }
+
+    @Override
+    public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> handleRecordCallback) {
+        try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
+            Iterator<CursorIterable.KeyVal<ByteBuffer>> it = recordDbi.iterate(txn).iterator();
+            while (it.hasNext()) {
+                CursorIterable.KeyVal<ByteBuffer> next = it.next();
+
+                ByteBuffer keyBuffer = next.key();
+                K repositoryKey = RepositoryKey.fromByteBuffer(keyClass, keyBuffer, specification);
+
+                ByteBuffer contentBuffer = next.val();
+                int contentLength = contentBuffer.getInt();
                 byte[] contentBytes = new byte[contentLength];
-                valueBuffer.get(contentBytes);
+                contentBuffer.get(contentBytes);
                 String content = new String(contentBytes, StandardCharsets.UTF_8);
-                visit.accept(Map.entry(repositoryKey, content), it.hasNext());
+
+                handleRecordCallback.accept(Map.entry(repositoryKey, content), it.hasNext());
             }
         }
     }

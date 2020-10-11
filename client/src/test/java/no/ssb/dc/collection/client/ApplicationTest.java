@@ -1,18 +1,18 @@
 package no.ssb.dc.collection.client;
 
-import no.ssb.config.DynamicConfiguration;
-import no.ssb.config.StoreBasedDynamicConfiguration;
+import no.ssb.dc.collection.api.config.BootstrapConfiguration;
 import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 public class ApplicationTest {
 
     @Test
     void printCommands() {
-        DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
-                .values("action", "help")
-                .values("target", "")
-                .build();
-
+        BootstrapConfiguration configuration = BootstrapConfiguration.create(Map.of(
+                "action", "help",
+                "target", ""
+        ));
         Application app = Application.create(configuration);
         app.printCommands();
     }
