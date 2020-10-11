@@ -51,33 +51,33 @@ public class Application implements Runnable {
                     new RawdataGCSTestWrite().produceRawdataToGCS(Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")));
                 }),
                 new Command("produce", "dynamic-no-cache", () -> {
-                    try (var worker = new CsvDynamicWorker(SourceNoDbConfiguration.create(), targetConfiguration, specification)) {
+                    try (var worker = new CsvDynamicWorker(SourceNoDbConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.produce();
                     }
                 }),
                 new Command("prepare", "dynamic-lmdb", () -> {
-                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(), targetConfiguration, specification)) {
+                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.prepare();
                     }
                 }),
                 new Command("produce", "dynamic-lmdb", () -> {
-                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(), targetConfiguration, specification)) {
+                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.produce();
                     }
                 }),
                 new Command("prepare", "dynamic-postgres", () -> {
-                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(), targetConfiguration, specification)) {
+                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.prepare();
                     }
                 }),
                 new Command("produce", "dynamic-postgres", () -> {
-                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(), targetConfiguration, specification)) {
+                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.produce();
                     }
                 }),
                 // TODO deprecate custom workers
                 new Command("produce", "rema-fs", () -> {
-                    try (RemaBongWorker worker = new RemaBongWorker(SourceRemaConfiguration.create(), Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")))) {
+                    try (RemaBongWorker worker = new RemaBongWorker(SourceRemaConfiguration.create(overrideConfig), Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")))) {
                         if (!worker.validate()) {
                             return;
                         }
