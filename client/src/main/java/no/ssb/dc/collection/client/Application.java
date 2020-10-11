@@ -21,7 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -111,10 +111,6 @@ public class Application implements Runnable {
     private final Collection<Command> commands;
     private final AtomicBoolean completed = new AtomicBoolean();
 
-    private Application(BootstrapConfiguration configuration) {
-        this(configuration, Collections.emptyMap());
-    }
-
     private Application(BootstrapConfiguration configuration, Map<String, String> overrideConfig) {
         this.configuration = configuration;
         this.commands = initializeCommands(configuration, overrideConfig, this::printCommands);
@@ -157,12 +153,12 @@ public class Application implements Runnable {
         }
     }
 
-    static Application create(BootstrapConfiguration configuration) {
-        return new Application(configuration);
+    static Application create() {
+        return new Application(BootstrapConfiguration.create(), new LinkedHashMap<>());
     }
 
-    static Application create(BootstrapConfiguration configuration, Map<String, String> overrideConfig) {
-        return new Application(configuration, overrideConfig);
+    static Application create(Map<String, String> overrideConfig) {
+        return new Application(BootstrapConfiguration.create(overrideConfig), overrideConfig);
     }
 
     @FunctionalInterface
@@ -185,9 +181,7 @@ public class Application implements Runnable {
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
 
-        BootstrapConfiguration configuration = BootstrapConfiguration.create();
-
-        Application application = Application.create(configuration);
+        Application application = Application.create();
         Thread thread = new Thread(application);
 
         try {
