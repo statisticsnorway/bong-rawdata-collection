@@ -1,5 +1,7 @@
 package no.ssb.dc.collection.api.worker;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -8,6 +10,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(Include.NON_NULL)
 public class CsvSpecification {
 
     public final BackendProvider backend;
@@ -124,6 +129,7 @@ public class CsvSpecification {
         }
     }
 
+    @JsonInclude(Include.NON_NULL)
     public static class Metadata {
 
         public final String source;
@@ -187,6 +193,7 @@ public class CsvSpecification {
         }
     }
 
+    @JsonInclude(Include.NON_NULL)
     public static class FileDescriptor {
 
         public final char delimiter;
@@ -254,6 +261,7 @@ public class CsvSpecification {
         }
     }
 
+    @JsonInclude(Include.NON_NULL)
     public static class PositionColumnKey extends Position {
         public final String name;
 
@@ -309,6 +317,7 @@ public class CsvSpecification {
         UUID;
     }
 
+    @JsonInclude(Include.NON_NULL)
     public static class PositionColumnFunction extends Position {
         public final KeyGenerator generator;
 
@@ -358,6 +367,7 @@ public class CsvSpecification {
         }
     }
 
+    @JsonInclude(Include.NON_NULL)
     public static class Column {
         public final String name;
         public final Class<?> type;
