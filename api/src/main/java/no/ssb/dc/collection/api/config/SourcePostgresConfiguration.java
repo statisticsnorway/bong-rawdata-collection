@@ -1,7 +1,5 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.dc.collection.api.config.internal.DynamicProxy;
-
 import java.util.Map;
 
 @Name("source-postgres")
@@ -48,10 +46,10 @@ public interface SourcePostgresConfiguration extends SourceConfiguration {
     }
 
     static SourcePostgresConfiguration create() {
-        return new DynamicProxy<>(SourcePostgresConfiguration.class).instance();
+        return ConfigurationFactory.createOrGet(SourcePostgresConfiguration.class);
     }
 
     static SourcePostgresConfiguration create(Map<String, String> overrideValues) {
-        return new DynamicProxy<>(SourcePostgresConfiguration.class, overrideValues).instance();
+        return ConfigurationFactory.createOrGet(SourcePostgresConfiguration.class, overrideValues);
     }
 }

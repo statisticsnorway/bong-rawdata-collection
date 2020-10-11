@@ -1,7 +1,5 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.dc.collection.api.config.internal.DynamicProxy;
-
 import java.util.Map;
 
 @Name("target-filesystem")
@@ -31,11 +29,11 @@ public interface LocalFileSystemConfiguration extends TargetConfiguration {
     }
 
     static LocalFileSystemConfiguration create() {
-        return new DynamicProxy<>(LocalFileSystemConfiguration.class).instance();
+        return ConfigurationFactory.createOrGet(LocalFileSystemConfiguration.class);
     }
 
     static LocalFileSystemConfiguration create(Map<String, String> overrideValues) {
-        return new DynamicProxy<>(LocalFileSystemConfiguration.class, overrideValues).instance();
+        return ConfigurationFactory.createOrGet(LocalFileSystemConfiguration.class, overrideValues);
     }
 
 }

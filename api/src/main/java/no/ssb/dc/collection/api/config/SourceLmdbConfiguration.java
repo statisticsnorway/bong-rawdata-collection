@@ -1,7 +1,5 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.dc.collection.api.config.internal.DynamicProxy;
-
 import java.util.Map;
 
 @Name("source-lmdb")
@@ -34,11 +32,11 @@ public interface SourceLmdbConfiguration extends SourceConfiguration {
     }
 
     static SourceLmdbConfiguration create() {
-        return new DynamicProxy<>(SourceLmdbConfiguration.class).instance();
+        return ConfigurationFactory.createOrGet(SourceLmdbConfiguration.class);
     }
 
     static SourceLmdbConfiguration create(Map<String, String> overrideValues) {
-        return new DynamicProxy<>(SourceLmdbConfiguration.class, overrideValues).instance();
+        return ConfigurationFactory.createOrGet(SourceLmdbConfiguration.class, overrideValues);
     }
 
 }

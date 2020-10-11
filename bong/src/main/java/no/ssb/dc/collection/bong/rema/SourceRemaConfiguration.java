@@ -1,6 +1,7 @@
 package no.ssb.dc.collection.bong.rema;
 
 import no.ssb.dc.collection.api.config.BaseConfiguration;
+import no.ssb.dc.collection.api.config.ConfigurationFactory;
 import no.ssb.dc.collection.api.config.Name;
 import no.ssb.dc.collection.api.config.Prefix;
 import no.ssb.dc.collection.api.config.Property;
@@ -40,10 +41,10 @@ public interface SourceRemaConfiguration extends BaseConfiguration {
     }
 
     static SourceRemaConfiguration create() {
-        return BaseConfiguration.create(SourceRemaConfiguration.class);
+        return ConfigurationFactory.createOrGet(SourceRemaConfiguration.class);
     }
 
     static SourceRemaConfiguration create(Map<String, String> overrideValues) {
-        return BaseConfiguration.create(SourceRemaConfiguration.class, overrideValues);
+        return ConfigurationFactory.createOrGet(SourceRemaConfiguration.class, overrideValues);
     }
 }

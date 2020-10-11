@@ -1,7 +1,5 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.dc.collection.api.config.internal.DynamicProxy;
-
 import java.util.Collections;
 import java.util.Map;
 
@@ -56,11 +54,11 @@ public interface BootstrapConfiguration extends BaseConfiguration {
     }
 
     static BootstrapConfiguration create() {
-        return new DynamicProxy<>(BootstrapConfiguration.class).instance();
+        return ConfigurationFactory.createOrGet(BootstrapConfiguration.class);
     }
 
     static BootstrapConfiguration create(Map<String, String> overrideValues) {
-        return new DynamicProxy<>(BootstrapConfiguration.class, overrideValues).instance();
+        return ConfigurationFactory.createOrGet(BootstrapConfiguration.class, overrideValues);
     }
 
 }

@@ -1,7 +1,5 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.dc.collection.api.config.internal.DynamicProxy;
-
 import java.util.Map;
 
 @Name("source-no-db")
@@ -23,10 +21,10 @@ public interface SourceNoDbConfiguration extends SourceConfiguration {
     }
 
     static SourceNoDbConfiguration create() {
-        return new DynamicProxy<>(SourceNoDbConfiguration.class).instance();
+        return ConfigurationFactory.createOrGet(SourceNoDbConfiguration.class);
     }
 
     static SourceNoDbConfiguration create(Map<String, String> overrideValues) {
-        return new DynamicProxy<>(SourceNoDbConfiguration.class, overrideValues).instance();
+        return ConfigurationFactory.createOrGet(SourceNoDbConfiguration.class, overrideValues);
     }
 }

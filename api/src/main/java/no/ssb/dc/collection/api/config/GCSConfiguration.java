@@ -1,7 +1,5 @@
 package no.ssb.dc.collection.api.config;
 
-import no.ssb.dc.collection.api.config.internal.DynamicProxy;
-
 import java.util.Map;
 
 @Name("target-gcs")
@@ -39,11 +37,11 @@ public interface GCSConfiguration extends TargetConfiguration {
     }
 
     static GCSConfiguration create() {
-        return BaseConfiguration.create(GCSConfiguration.class);
+        return ConfigurationFactory.createOrGet(GCSConfiguration.class);
     }
 
     static GCSConfiguration create(Map<String, String> overrideValues) {
-        return new DynamicProxy<>(GCSConfiguration.class, overrideValues).instance();
+        return ConfigurationFactory.createOrGet(GCSConfiguration.class, overrideValues);
     }
 
 }
