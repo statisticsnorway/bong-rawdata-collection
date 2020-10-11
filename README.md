@@ -1,4 +1,4 @@
-# Bong Rawdata Collection
+# Rawdata Collection Client
 
 This project provides a CLI for converting CSV data to Rawdata, uploaded to a bucket at GCS. 
 The Application is deployed on Docker Engine on-premise. 
