@@ -71,6 +71,10 @@ public class DynamicInvocationHandler implements InvocationHandler {
             return Optional.ofNullable(value).isPresent();
         }
 
+        if (dynamicConfiguration.evaluateToString(property.value()) == null) {
+            throw new IllegalStateException("Property not found: " + property.value());
+        }
+
         Class<?> returnType = method.getReturnType();
         if (returnType == String.class) {
             return dynamicConfiguration.evaluateToString(property.value());
