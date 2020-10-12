@@ -13,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class CsvDynamicKey implements RepositoryKey {
 
@@ -38,28 +37,8 @@ public class CsvDynamicKey implements RepositoryKey {
         return new CsvDynamicKey(specification, values);
     }
 
-    public Map<String, Class<?>> keys() {
-        return specification.groupByColumns.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().type, (e1, e2) -> e2, LinkedHashMap::new));
-    }
-
     public Map<String, Object> values() {
         return values;
-    }
-
-    public List<String> positionKeys() {
-        List<String> keys = new ArrayList<>();
-        for (Map.Entry<String, CsvSpecification.Position> entry : specification.positionKeys.entrySet()) {
-            if (entry.getValue() instanceof CsvSpecification.PositionColumnKey) {
-                keys.add(entry.getKey());
-
-            } else if (entry.getValue() instanceof CsvSpecification.PositionColumnFunction) {
-                keys.add(FUNCTION_SPECIFIER + entry.getKey());
-
-            } else {
-                throw new UnsupportedOperationException();
-            }
-        }
-        return keys;
     }
 
     @Override
@@ -71,23 +50,23 @@ public class CsvDynamicKey implements RepositoryKey {
     public <R extends RepositoryKey> R fromByteBuffer(CsvSpecification specification, ByteBuffer keyBuffer) {
         Objects.requireNonNull(keyBuffer);
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
-        // PAY ATTENTION TO .keys() and resolve sorted keys per record
-        for (Map.Entry<String, Class<?>> entry : this.keys().entrySet()) {
-            if (entry.getValue() == String.class) {
+
+        for (Map.Entry<String, CsvSpecification.Key> entry : specification.columns.keys().entrySet()) {
+            if (entry.getValue().type == String.class) {
                 int stringLength = keyBuffer.getInt();
                 byte[] stringBytes = new byte[stringLength];
                 keyBuffer.get(stringBytes);
                 values.put(entry.getKey(), new String(stringBytes, StandardCharsets.UTF_8));
 
-            } else if (entry.getValue() == Long.class) {
+            } else if (entry.getValue().type == Long.class) {
                 Long longValue = keyBuffer.getLong();
                 values.put(entry.getKey(), longValue);
 
-            } else if (entry.getValue() == Integer.class) {
+            } else if (entry.getValue().type == Integer.class) {
                 Integer intValue = keyBuffer.getInt();
                 values.put(entry.getKey(), intValue);
 
-            } else if (entry.getValue() == Date.class) {
+            } else if (entry.getValue().type == Date.class) {
                 Long longValue = keyBuffer.getLong();
                 values.put(entry.getKey(), longValue);
 
@@ -95,31 +74,32 @@ public class CsvDynamicKey implements RepositoryKey {
                 throw new UnsupportedOperationException();
             }
         }
+
         return (R) CsvDynamicKey.create(specification, values);
     }
 
     @Override
     public ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
         Objects.requireNonNull(allocatedBuffer);
-        for (Map.Entry<String, Class<?>> entry : keys().entrySet()) {
+        for (Map.Entry<String, CsvSpecification.Key> entry : specification.columns.keys().entrySet()) {
             if (!values.containsKey(entry.getKey())) {
                 throw new IllegalStateException("Missing GenericKey value for: " + entry.getKey());
             }
-            if (entry.getValue() == String.class) {
+            if (entry.getValue().type == String.class) {
                 String stringValue = (String) values.get(entry.getKey());
                 byte[] stringBytes = stringValue.getBytes(StandardCharsets.UTF_8);
                 allocatedBuffer.putInt(stringBytes.length);
                 allocatedBuffer.put(stringBytes);
 
-            } else if (entry.getValue() == Long.class) {
+            } else if (entry.getValue().type == Long.class) {
                 Long longValue = (Long) values.get(entry.getKey());
                 allocatedBuffer.putLong(longValue);
 
-            } else if (entry.getValue() == Integer.class) {
+            } else if (entry.getValue().type == Integer.class) {
                 Integer intValue = (Integer) values.get(entry.getKey());
                 allocatedBuffer.putInt(intValue);
 
-            } else if (entry.getValue() == Date.class) {
+            } else if (entry.getValue().type == Date.class) {
                 Date dateValue = (Date) values.get(entry.getKey());
                 allocatedBuffer.putLong(dateValue.getTime());
 
@@ -132,29 +112,28 @@ public class CsvDynamicKey implements RepositoryKey {
 
     @Override
     public String toPosition() {
-        Objects.requireNonNull(positionKeys());
-        List<String> positionKeys = new ArrayList<>();
-        for (String key : positionKeys()) {
-            if (key.startsWith(FUNCTION_SPECIFIER)) {
-                CsvSpecification.PositionColumnFunction function = getFunction(key);
+        Objects.requireNonNull(specification);
+        List<String> positionValues = new ArrayList<>();
+        for (Map.Entry<String, CsvSpecification.Key> entry : specification.columns.positionKeys().entrySet()) {
+            if (entry.getValue().isColumn()) {
+                Object value = values.get(entry.getKey());
+                positionValues.add(value.toString());
+
+            } else if (entry.getValue().isFunction()) {
                 Object generatedValue;
-                switch (function.generator) {
+                switch (entry.getValue().asFunction().generator) {
                     case SEQUENCE -> generatedValue = SequenceGenerator.next();
                     case ULID -> generatedValue = ULIDGenerator.toUUID(ULIDGenerator.generate());
                     case UUID -> generatedValue = UUIDGenerator.generate();
-                    default -> throw new RuntimeException("Function type " + function.generator + " NOT supported!");
+                    default -> throw new RuntimeException("Function type " + entry.getValue().asFunction().generator + " NOT supported!");
                 }
-                positionKeys.add(generatedValue.toString());
+                positionValues.add(generatedValue.toString());
+
             } else {
-                Object value = values.get(key);
-                positionKeys.add(value.toString());
+                throw new UnsupportedOperationException();
             }
         }
-        return String.join(".", positionKeys);
-    }
-
-    public CsvSpecification.PositionColumnFunction getFunction(String key) {
-        return (CsvSpecification.PositionColumnFunction) specification.positionKeys.get(key.replace(FUNCTION_SPECIFIER, ""));
+        return String.join(".", positionValues);
     }
 
     public boolean isKeyValueEqualTo(List<String> keys, Object other) {
@@ -165,7 +144,8 @@ public class CsvDynamicKey implements RepositoryKey {
     }
 
     public boolean isPartOf(Object other) {
-        return isKeyValueEqualTo(positionKeys(), other);
+        List<String> compareKeys = new ArrayList<>(specification.columns.groupByKeys().keySet());
+        return isKeyValueEqualTo(compareKeys, other);
     }
 
     @Override

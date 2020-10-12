@@ -40,24 +40,27 @@ public class CsvDynamicTest {
                     .contentType("text/csv")
                     .files("generic.csv")
             )
-            .positionKey(columnKey()
-                    .name("a")
-            )
-            .positionKey(function()
-                    .generator(KeyGenerator.ULID)
-            )
-            .groupByKey(column()
+            .columnKeys(column()
                     .name("a")
                     .type(String.class)
+                    .position()
+                    .groupBy()
             )
-            .groupByKey(column()
+            .columnKeys(column()
                     .name("b")
                     .type(String.class)
+                    .groupBy()
             )
-            .groupByKey(column()
+            .columnKeys(column()
                     .name("c")
                     .type(Date.class)
                     .format("MM/dd/yyyy HH:mm:ss")
+                    .groupBy()
+            )
+            .columnKeys(function()
+                    .name("seq")
+                    .generator(KeyGenerator.SEQUENCE)
+                    .position()
             )
             .build();
 
@@ -125,9 +128,9 @@ public class CsvDynamicTest {
     @Test
     public void spec() {
         assertEquals(StandardCharsets.US_ASCII, specification.fileDescriptor.charset);
-        assertEquals("a", specification.positionKeys.get("a").internal());
-        assertEquals(String.class, specification.groupByColumns.get("a").type);
-        assertEquals(String.class, specification.groupByColumns.get("b").type);
+        assertEquals("a", specification.columns.columnKey("a").name);
+        assertEquals(String.class, specification.columns.columnKey("a").type);
+        assertEquals(String.class, specification.columns.columnKey("b").type);
     }
 
     @Test

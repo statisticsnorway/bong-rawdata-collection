@@ -12,10 +12,12 @@ import no.ssb.dc.collection.api.source.LmdbCsvRepository;
 import no.ssb.dc.collection.api.source.PostgresCsvRepository;
 import no.ssb.dc.collection.api.source.SimpleCsvRepository;
 import no.ssb.dc.collection.api.utils.ConversionUtils;
+import no.ssb.dc.collection.api.utils.ULIDGenerator;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
 
@@ -78,30 +80,28 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
     CsvDynamicKey createDynamicKey(CsvParser.Record csvRecord) {
         Map<String, Object> values = new LinkedHashMap<>();
 
-        // TODO add function for uniqueness
-
-        // iterate groupBy and produce group key with values
-        specification.groupByColumns.forEach((name, column) -> {
-            if (!csvRecord.headers.containsKey(name)) {
+        specification.columns.keys().forEach((name, columnKey) -> {
+            if (!csvRecord.headers.containsKey(name) && !columnKey.isFunction()) {
                 throw new RuntimeException("Failed to resolve header column: " + name);
             }
-            Map.Entry<Integer, String> entryHeaderWithColumnPositionAndAvroFieldName = csvRecord.headers.get(name);
-            int columnPosition = entryHeaderWithColumnPositionAndAvroFieldName.getKey();
-
-            String value = csvRecord.tokens.get(columnPosition);
 
             Object convertedValue;
-            if (column.type == String.class) {
-                convertedValue = value;
+            if (columnKey.isColumn()) {
+                Map.Entry<Integer, String> entryHeaderWithColumnPositionAndAvroFieldName = csvRecord.headers.get(name);
+                int columnPosition = entryHeaderWithColumnPositionAndAvroFieldName.getKey();
 
-            } else if (column.type == Long.class) {
-                convertedValue = ConversionUtils.toLong(value);
+                String value = csvRecord.tokens.get(columnPosition);
+                convertedValue = convertStringValueAsTypeSafe(columnKey.type, value, columnKey.asColumn().format);
 
-            } else if (column.type == Integer.class) {
-                convertedValue = ConversionUtils.toInteger(value);
-
-            } else if (column.type == Date.class) {
-                convertedValue = ConversionUtils.toDate(value, column.format);
+            } else if (columnKey.isFunction()) {
+                Object generatedValue;
+                switch (columnKey.asFunction().generator) {
+                    case SEQUENCE -> generatedValue = SequenceGenerator.next();
+                    case ULID -> generatedValue = ULIDGenerator.toUUID(ULIDGenerator.generate());
+                    case UUID -> generatedValue = UUIDGenerator.generate();
+                    default -> throw new RuntimeException("Function type " + columnKey.asFunction().generator + " NOT supported!");
+                }
+                convertedValue = convertStringValueAsTypeSafe(columnKey.type, convertGeneratedValueToString(generatedValue), null);
 
             } else {
                 throw new UnsupportedOperationException();
@@ -110,6 +110,38 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
             values.put(name, convertedValue);
         });
         return CsvDynamicKey.create(specification, values);
+    }
+
+    private Object convertStringValueAsTypeSafe(Class<?> type, String value, String format) {
+        Object convertedValue;
+        if (type == String.class) {
+            convertedValue = value;
+
+        } else if (type == Long.class) {
+            convertedValue = ConversionUtils.toLong(value);
+
+        } else if (type == Integer.class) {
+            convertedValue = ConversionUtils.toInteger(value);
+
+        } else if (type == Date.class) {
+            convertedValue = ConversionUtils.toDate(value, format);
+
+        } else {
+            throw new UnsupportedOperationException();
+        }
+        return convertedValue;
+    }
+
+    private String convertGeneratedValueToString(Object value) {
+        if (value instanceof Long) {
+            return value.toString();
+
+        } else if (value instanceof UUID) {
+            return value.toString();
+
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override

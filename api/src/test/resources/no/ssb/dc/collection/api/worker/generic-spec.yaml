@@ -39,22 +39,39 @@ fileDescriptor:
 #
 # Allowed functions: SEQUENCE, ULID, UUID
 #
-positionKeys:
+
+keys:
   - column: "a"
-  - function: ULID
+    type: "String"
+    position: true
+    groupBy: true
+
+  - column: "b"
+    type: "String"
+
+  - column: "c"
+    type: "Date"
+    format: "MM/dd/yyyy HH:mm:ss"
+
+  - function: "d"
+    generator: ULID
+
+#positionKeys:
+#  - column: "a"
+#  - function: ULID
 
 #
 # The Lmdb and Postgres backend offers pre-processing of source data, so that grouped messages can be produced.
 #
 # Allowed types: String, Integer, Long and Date
 #
-groupByKeys:
-  - column: "a"
-    type: "String"
-  - column: "b"
-    type: "String"
-  - column: "c"
-    type: "Date"
-    format: "MM/dd/yyyy HH:mm:ss"
-
+#groupByKeys:
+#  - column: "a"
+#    type: "String"
+#  - column: "b"
+#    type: "String"
+#  - column: "c"
+#    type: "Date"
+#    format: "MM/dd/yyyy HH:mm:ss"
+#
 

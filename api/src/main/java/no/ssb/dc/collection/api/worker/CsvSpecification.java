@@ -5,9 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -20,19 +18,16 @@ public class CsvSpecification {
     public final BackendProvider backend;
     public final Metadata metadata;
     public final FileDescriptor fileDescriptor;
-    public final Map<String, Position> positionKeys;
-    public final Map<String, Column> groupByColumns;
+    public final ColumnKeys columns;
 
     public CsvSpecification(BackendProvider backend,
                             Metadata metadata,
                             FileDescriptor fileDescriptor,
-                            Map<String, Position> positionKeys,
-                            Map<String, Column> groupByColumns) {
+                            ColumnKeys columns) {
         this.backend = backend;
         this.metadata = metadata;
         this.fileDescriptor = fileDescriptor;
-        this.positionKeys = positionKeys;
-        this.groupByColumns = groupByColumns;
+        this.columns = columns;
     }
 
     public static Metadata.Builder metadata() {
@@ -43,16 +38,12 @@ public class CsvSpecification {
         return new FileDescriptor.Builder();
     }
 
-    public static PositionColumnKey.Builder columnKey() {
-        return new PositionColumnKey.Builder();
+    public static ColumnKey.Builder column() {
+        return new ColumnKey.Builder();
     }
 
-    public static PositionColumnFunction.Builder function() {
-        return new PositionColumnFunction.Builder();
-    }
-
-    public static Column.Builder column() {
-        return new Column.Builder();
+    public static FunctionKey.Builder function() {
+        return new FunctionKey.Builder();
     }
 
     @Override
@@ -61,8 +52,7 @@ public class CsvSpecification {
                 "backend='" + backend + '\'' +
                 ", metadata=" + metadata +
                 ", fileDescriptor=" + fileDescriptor +
-                ", positionKeys=" + positionKeys +
-                ", groupByColumns=" + groupByColumns +
+                ", columns=" + columns +
                 '}';
     }
 
@@ -70,8 +60,7 @@ public class CsvSpecification {
         private final Map<String, Object> fieldMap = new LinkedHashMap<>();
         private Metadata.Builder metadataBuilder;
         private FileDescriptor.Builder fileDescriptorBuilder;
-        private final List<Position.Builder<?>> positionByBuilders = new ArrayList<>();
-        private final List<Column.Builder> groupByColumnBuilders = new ArrayList<>();
+        private ColumnKeys.Builder keysBuilder = new ColumnKeys.Builder();
 
         public Builder backend(BackendProvider backend) {
             fieldMap.put("backend", backend);
@@ -88,15 +77,11 @@ public class CsvSpecification {
             return this;
         }
 
-        public Builder positionKey(Position.Builder<?> positionBuilder) {
-            positionByBuilders.add(positionBuilder);
+        public <K extends Key.Builder<?, ?>> Builder columnKeys(K keysBuilder) {
+            this.keysBuilder.key(keysBuilder);
             return this;
         }
 
-        public Builder groupByKey(Column.Builder columnBuilder) {
-            groupByColumnBuilders.add(columnBuilder);
-            return this;
-        }
 
         public CsvSpecification build() {
             if (metadataBuilder == null) {
@@ -107,26 +92,15 @@ public class CsvSpecification {
                 throw new IllegalStateException("No fileDescriptor definition defined!");
             }
 
-            if (positionByBuilders.isEmpty()) {
-                throw new IllegalStateException("No position definition defined!");
+            if (keysBuilder.keyBuilderMap.isEmpty()) {
+                throw new IllegalStateException("No column key definition defined!");
             }
-
-            if (groupByColumnBuilders.isEmpty()) {
-                throw new IllegalStateException("No groupBy definition defined!");
-            }
-
-            Map<String, Position> positionKeys = positionByBuilders.stream().map(builder -> builder.build())
-                    .collect(toMap(key -> key.internal(), value -> value, (Position e1, Position e2) -> e1, LinkedHashMap::new));
-
-            Map<String, Column> groupByColumns = groupByColumnBuilders.stream().map(Column.Builder::build)
-                    .collect(toMap(key -> key.name, value -> value, (e1, e2) -> e1, LinkedHashMap::new));
 
             return new CsvSpecification(
                     (BackendProvider) fieldMap.get("backend"),
                     metadataBuilder.build(),
                     fileDescriptorBuilder.build(),
-                    positionKeys,
-                    groupByColumns
+                    keysBuilder.build()
             );
         }
     }
@@ -255,11 +229,27 @@ public class CsvSpecification {
     }
 
     @JsonInclude(Include.NON_NULL)
-    public static class Keys {
+    public static class ColumnKeys {
         private final Map<String, Key> keyMap;
 
-        public Keys(Map<String, Key> keyMap) {
+        public ColumnKeys(Map<String, Key> keyMap) {
             this.keyMap = keyMap;
+        }
+
+        public ColumnKey columnKey(String name) {
+            Key key = keyMap.get(name);
+            if (!key.isColumn()) {
+                throw new IllegalStateException();
+            }
+            return key.asColumn();
+        }
+
+        public FunctionKey functionKey(String name) {
+            Key key = keyMap.get(name);
+            if (!key.isFunction()) {
+                throw new IllegalStateException();
+            }
+            return key.asFunction();
         }
 
         /**
@@ -284,6 +274,26 @@ public class CsvSpecification {
             return keyMap.entrySet().stream().filter(entry -> entry.getValue().isGroupBy()).collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ColumnKeys that = (ColumnKeys) o;
+            return Objects.equals(keyMap, that.keyMap);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(keyMap);
+        }
+
+        @Override
+        public String toString() {
+            return "ColumnKeys{" +
+                    "keyMap=" + keyMap +
+                    '}';
+        }
+
         public static class Builder {
             final Map<String, Key.Builder<?, ?>> keyBuilderMap = new LinkedHashMap<>();
 
@@ -292,20 +302,23 @@ public class CsvSpecification {
                 return this;
             }
 
-            public Keys build() {
+            public ColumnKeys build() {
                 Map<String, Key> keyMap = keyBuilderMap.entrySet().stream().collect(toMap(Map.Entry::getKey, value -> (Key) value.getValue().build(), (e1, e2) -> e1, LinkedHashMap::new));
-                return new Keys(keyMap);
+                return new ColumnKeys(keyMap);
             }
         }
     }
 
+    @JsonInclude(Include.NON_NULL)
     abstract public static class Key {
         public final String name;
+        public final Class<?> type;
         private final boolean partOfPosition;
         private final boolean partOfGroupBy;
 
-        public Key(String name, boolean partOfPosition, boolean partOfGroupBy) {
+        public Key(String name, Class<?> type, boolean partOfPosition, boolean partOfGroupBy) {
             this.name = name;
+            this.type = type;
             this.partOfPosition = partOfPosition;
             this.partOfGroupBy = partOfGroupBy;
         }
@@ -324,9 +337,17 @@ public class CsvSpecification {
             return this instanceof ColumnKey;
         }
 
+        public ColumnKey asColumn() {
+            return (ColumnKey) this;
+        }
+
         @JsonIgnore
         public boolean isFunction() {
             return this instanceof FunctionKey;
+        }
+
+        public FunctionKey asFunction() {
+            return (FunctionKey) this;
         }
 
         public boolean isPosition() {
@@ -344,12 +365,13 @@ public class CsvSpecification {
             Key key = (Key) o;
             return partOfPosition == key.partOfPosition &&
                     partOfGroupBy == key.partOfGroupBy &&
-                    Objects.equals(name, key.name);
+                    Objects.equals(name, key.name) &&
+                    Objects.equals(type, key.type);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, partOfPosition, partOfGroupBy);
+            return Objects.hash(name, type, partOfPosition, partOfGroupBy);
         }
 
         abstract public static class Builder<KEY, BUILDER> {
@@ -362,6 +384,11 @@ public class CsvSpecification {
 
             String name() {
                 return (String) map.get("name");
+            }
+
+            public BUILDER type(Class<?> type) {
+                map.put("type", type);
+                return (BUILDER) this;
             }
 
             public BUILDER position() {
@@ -380,12 +407,10 @@ public class CsvSpecification {
 
     @JsonInclude(Include.NON_NULL)
     public static class ColumnKey extends Key {
-        public final Class<?> type;
         public final String format;
 
         public ColumnKey(String name, Class<?> type, String format, boolean partOfPosition, boolean partOfGroupBy) {
-            super(name, partOfPosition, partOfGroupBy);
-            this.type = type;
+            super(name, type, partOfPosition, partOfGroupBy);
             this.format = format;
         }
 
@@ -395,8 +420,7 @@ public class CsvSpecification {
             if (o == null || getClass() != o.getClass()) return false;
             if (!super.equals(o)) return false;
             ColumnKey columnKey = (ColumnKey) o;
-            return Objects.equals(type, columnKey.type) &&
-                    Objects.equals(format, columnKey.format);
+            return Objects.equals(format, columnKey.format);
         }
 
         @Override
@@ -408,19 +432,14 @@ public class CsvSpecification {
         public String toString() {
             return "ColumnKey{" +
                     "name='" + name + '\'' +
-                    ", partOfPosition=" + isPosition() +
-                    ", partOfGroupBy=" + isGroupBy() +
                     ", type=" + type +
                     ", format='" + format + '\'' +
+                    ", partOfPosition=" + isPosition() +
+                    ", partOfGroupBy=" + isGroupBy() +
                     '}';
         }
 
         public static class Builder extends Key.Builder<ColumnKey, ColumnKey.Builder> {
-
-            public Builder type(Class<?> type) {
-                map.put("type", type);
-                return this;
-            }
 
             public Builder format(String format) {
                 map.put("format", format);
@@ -439,19 +458,20 @@ public class CsvSpecification {
                         (String) map.get("name"),
                         (Class<?>) map.get("type"),
                         (String) map.get("format"),
-                        map.containsKey("position"),
-                        map.containsKey("groupBy")
+                        map.containsKey("position") && Boolean.parseBoolean(String.valueOf(map.get("position"))),
+                        map.containsKey("groupBy") && Boolean.parseBoolean(String.valueOf(map.get("groupBy")))
                 );
             }
         }
     }
 
+
     @JsonInclude(Include.NON_NULL)
     public static class FunctionKey extends Key {
         public final KeyGenerator generator;
 
-        public FunctionKey(String name, KeyGenerator generator, boolean partOfPosition, boolean partOfGroupBy) {
-            super(name, partOfPosition, partOfGroupBy);
+        public FunctionKey(String name, Class<?> type, KeyGenerator generator, boolean partOfPosition, boolean partOfGroupBy) {
+            super(name, type, partOfPosition, partOfGroupBy);
             this.generator = generator;
         }
 
@@ -473,9 +493,10 @@ public class CsvSpecification {
         public String toString() {
             return "FunctionKey{" +
                     "name='" + name + '\'' +
+                    ", type='" + type + '\'' +
+                    ", generator=" + generator +
                     ", partOfPosition=" + isPosition() +
                     ", partOfGroupBy=" + isGroupBy() +
-                    ", generator=" + generator +
                     '}';
         }
 
@@ -483,6 +504,7 @@ public class CsvSpecification {
 
             public Builder generator(KeyGenerator generator) {
                 map.put("generator", generator);
+                map.put("type", generator.type);
                 return this;
             }
 
@@ -490,6 +512,7 @@ public class CsvSpecification {
             FunctionKey build() {
                 return new FunctionKey(
                         (String) map.get("name"),
+                        (Class<?>) map.get("type"),
                         (KeyGenerator) map.get("generator"),
                         map.containsKey("position"),
                         map.containsKey("groupBy")
@@ -498,188 +521,4 @@ public class CsvSpecification {
         }
     }
 
-    abstract public static class Position {
-
-        abstract String internal();
-
-        abstract public static class Builder<T> {
-            abstract public Position build();
-        }
-    }
-
-    @JsonInclude(Include.NON_NULL)
-    public static class PositionColumnKey extends Position {
-        public final String name;
-
-        public PositionColumnKey(String name) {
-            this.name = name;
-        }
-
-        @Override
-        String internal() {
-            return name;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PositionColumnKey that = (PositionColumnKey) o;
-            return name.equals(that.name);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(name);
-        }
-
-        @Override
-        public String toString() {
-            return "PositionColumnKey{" +
-                    "name='" + name + '\'' +
-                    '}';
-        }
-
-        public static class Builder extends Position.Builder<PositionColumnKey> {
-            private final Map<String, String> map = new LinkedHashMap<>();
-
-            public Builder name(String name) {
-                map.put("name", name);
-                return this;
-            }
-
-            @Override
-            public PositionColumnKey build() {
-                return new PositionColumnKey(
-                        map.get("name")
-                );
-            }
-        }
-    }
-
-    public enum KeyGenerator {
-        SEQUENCE,
-        ULID,
-        UUID;
-    }
-
-    @JsonInclude(Include.NON_NULL)
-    public static class PositionColumnFunction extends Position {
-        public final KeyGenerator generator;
-
-        public PositionColumnFunction(KeyGenerator generator) {
-            this.generator = generator;
-        }
-
-        @Override
-        String internal() {
-            return generator.name();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PositionColumnFunction that = (PositionColumnFunction) o;
-            return generator.equals(that.generator);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(generator);
-        }
-
-        @Override
-        public String toString() {
-            return "PositionColumnFunction{" +
-                    "generator='" + generator + '\'' +
-                    '}';
-        }
-
-        public static class Builder extends Position.Builder<PositionColumnFunction> {
-            private final Map<String, KeyGenerator> map = new LinkedHashMap<>();
-
-            public Builder generator(KeyGenerator generator) {
-                map.put("generator", generator);
-                return this;
-            }
-
-            @Override
-            public PositionColumnFunction build() {
-                return new PositionColumnFunction(
-                        map.get("generator")
-                );
-            }
-        }
-    }
-
-    @JsonInclude(Include.NON_NULL)
-    public static class Column {
-        public final String name;
-        public final Class<?> type;
-        public final String format;
-
-        public Column(String name, Class<?> type, String format) {
-            this.name = name;
-            this.type = type;
-            this.format = format;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Column column = (Column) o;
-            return name.equals(column.name) &&
-                    Objects.equals(type, column.type) &&
-                    Objects.equals(format, column.format);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(name, type, format);
-        }
-
-        @Override
-        public String toString() {
-            return "Column{" +
-                    "name='" + name + '\'' +
-                    ", type=" + type +
-                    ", format='" + format + '\'' +
-                    '}';
-        }
-
-        public static class Builder {
-            private final Map<String, Object> map = new LinkedHashMap<>();
-
-            public Builder name(String name) {
-                map.put("name", name);
-                return this;
-            }
-
-            public Builder type(Class<?> type) {
-                map.put("type", type);
-                return this;
-            }
-
-            public Builder format(String format) {
-                map.put("format", format);
-                return this;
-            }
-
-            public Column build() {
-                if (!map.containsKey("name")) {
-                    throw new IllegalStateException("Collum name IS NOT defined!");
-                }
-                if (!map.containsKey("type")) {
-                    throw new IllegalStateException("Collum type IS NOT defined!");
-                }
-                return new Column(
-                        (String) map.get("name"),
-                        (Class<?>) map.get("type"),
-                        (String) map.get("format")
-                );
-            }
-        }
-    }
 }

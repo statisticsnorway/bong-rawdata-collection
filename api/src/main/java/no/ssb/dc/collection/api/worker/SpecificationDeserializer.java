@@ -30,8 +30,7 @@ public class SpecificationDeserializer {
             checkIfFieldExists(root, "backend");
             checkIfFieldExists(root, "metadata");
             checkIfFieldExists(root, "fileDescriptor");
-            checkIfFieldExists(root, "positionKeys");
-            checkIfFieldExists(root, "groupByKeys");
+            checkIfFieldExists(root, "keys");
 
             Optional.ofNullable(root.get("backend")).map(m -> builder.backend(BackendProvider.of(m.asText())));
 
@@ -53,17 +52,27 @@ public class SpecificationDeserializer {
             }
             builder.fileDescriptor(fileDescriptor);
 
-            for (JsonNode node : root.withArray("positionKeys")) {
-                Optional.ofNullable(getString(node, "column")).map(m -> builder.positionKey(columnKey().name(m)));
-                Optional.ofNullable(getString(node, "function")).map(m -> builder.positionKey(function().generator(KeyGenerator.valueOf(m))));
-            }
+            for (JsonNode node : root.withArray("keys")) {
+                if (node.findParent("column") != null) {
+                    ColumnKey.Builder columnKeys = column();
+                    Optional.ofNullable(getString(node, "column")).map(columnKeys::name);
+                    Optional.ofNullable(getString(node, "type")).map(type -> columnKeys.type(classForSimpleName(type)));
+                    Optional.ofNullable(getString(node, "format")).map(columnKeys::format);
+                    Optional.ofNullable(getString(node, "position")).map(position -> Boolean.parseBoolean(position) ? columnKeys.position() : false);
+                    Optional.ofNullable(getString(node, "groupBy")).map(groupBy -> Boolean.parseBoolean(groupBy) ? columnKeys.groupBy() : false);
+                    builder.columnKeys(columnKeys);
 
-            for (JsonNode node : root.withArray("groupByKeys")) {
-                CsvSpecification.Column.Builder columnBuilder = column();
-                Optional.ofNullable(getString(node, "column")).map(columnBuilder::name);
-                Optional.ofNullable(getString(node, "type")).map(m -> columnBuilder.type(classForSimpleName(m)));
-                Optional.ofNullable(getString(node, "format")).map(columnBuilder::format);
-                builder.groupByKey(columnBuilder);
+                } else if (node.findParent("function") != null) {
+                    FunctionKey.Builder functionKeys = function();
+                    Optional.ofNullable(getString(node, "function")).map(functionKeys::name);
+                    Optional.ofNullable(getString(node, "generator")).map(generator -> functionKeys.generator(KeyGenerator.valueOf(generator)));
+                    Optional.ofNullable(getString(node, "position")).map(position -> Boolean.parseBoolean(position) ? functionKeys.position() : false);
+                    Optional.ofNullable(getString(node, "groupBy")).map(groupBy -> Boolean.parseBoolean(groupBy) ? functionKeys.groupBy() : false);
+                    builder.columnKeys(functionKeys);
+
+                } else {
+                    throw new UnsupportedOperationException();
+                }
             }
 
             return builder.build();
@@ -85,8 +94,8 @@ public class SpecificationDeserializer {
         validateNotNull(specification.fileDescriptor.contentType, "ContentType must be defined");
         validateNotNull(specification.fileDescriptor.files, "CSV files must be defined"); // TODO warn when csv files is not applied
 
-        validateTrue(specification.positionKeys.isEmpty(), "PositionKeys must be defined");
-        validateTrue(specification.groupByColumns.isEmpty(), "GroupByKeys must be defined");
+        validateTrue(specification.columns.keys().isEmpty(), "CSV keys must be defined");
+        validateTrue(specification.columns.positionKeys().isEmpty(), "Rawdata message position keys must be defined");
     }
 
     private void validateNotNull(Object target, String message) {
