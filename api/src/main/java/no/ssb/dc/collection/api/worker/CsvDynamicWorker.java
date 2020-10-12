@@ -96,7 +96,7 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
             } else if (columnKey.isFunction()) {
                 Object generatedValue;
                 switch (columnKey.asFunction().generator) {
-                    case SEQUENCE -> generatedValue = SequenceGenerator.next();
+                    case SEQUENCE -> generatedValue = SequenceGenerator.next(SequenceGenerator.Subject.DYNAMIC_KEY);
                     case ULID -> generatedValue = ULIDGenerator.toUUID(ULIDGenerator.generate());
                     case UUID -> generatedValue = UUIDGenerator.generate();
                     default -> throw new RuntimeException("Function type " + columnKey.asFunction().generator + " NOT supported!");

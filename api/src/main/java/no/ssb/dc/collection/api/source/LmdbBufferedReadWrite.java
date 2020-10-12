@@ -126,7 +126,6 @@ public class LmdbBufferedReadWrite implements BufferedReadWrite {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
             Iterator<CursorIterable.KeyVal<ByteBuffer>> it = recordDbi.iterate(txn).iterator();
             while (it.hasNext()) {
-                System.out.printf("%s%n", count.incrementAndGet());
                 CursorIterable.KeyVal<ByteBuffer> next = it.next();
 
                 ByteBuffer keyBuffer = next.key();

@@ -122,7 +122,7 @@ public class CsvDynamicKey implements RepositoryKey {
             } else if (entry.getValue().isFunction()) {
                 Object generatedValue;
                 switch (entry.getValue().asFunction().generator) {
-                    case SEQUENCE -> generatedValue = SequenceGenerator.next();
+                    case SEQUENCE -> generatedValue = SequenceGenerator.next(SequenceGenerator.Subject.POSITION_KEY);
                     case ULID -> generatedValue = ULIDGenerator.toUUID(ULIDGenerator.generate());
                     case UUID -> generatedValue = UUIDGenerator.generate();
                     default -> throw new RuntimeException("Function type " + entry.getValue().asFunction().generator + " NOT supported!");
