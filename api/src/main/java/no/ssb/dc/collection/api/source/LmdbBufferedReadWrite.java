@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
 public class LmdbBufferedReadWrite implements BufferedReadWrite {
@@ -121,9 +122,11 @@ public class LmdbBufferedReadWrite implements BufferedReadWrite {
 
     @Override
     public <K extends RepositoryKey> void readRecord(Class<K> keyClass, BiConsumer<Map.Entry<K, String>, Boolean> handleRecordCallback) {
+        AtomicLong count = new AtomicLong();
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
             Iterator<CursorIterable.KeyVal<ByteBuffer>> it = recordDbi.iterate(txn).iterator();
             while (it.hasNext()) {
+                System.out.printf("%s%n", count.incrementAndGet());
                 CursorIterable.KeyVal<ByteBuffer> next = it.next();
 
                 ByteBuffer keyBuffer = next.key();

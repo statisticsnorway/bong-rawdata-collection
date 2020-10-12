@@ -59,6 +59,7 @@ abstract public class GenericKey implements RepositoryKey {
     public <R extends RepositoryKey> R fromByteBuffer(CsvSpecification specification, ByteBuffer keyBuffer) {
         Objects.requireNonNull(keyBuffer);
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
+        // PAY ATTENTION TO .keys() and resolve sorted keys per record
         for (Map.Entry<String, Class<?>> entry : this.keys().entrySet()) {
             if (entry.getValue() == String.class) {
                 int stringLength = keyBuffer.getInt();

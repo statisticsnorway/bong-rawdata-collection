@@ -77,7 +77,8 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
 
     CsvDynamicKey createDynamicKey(CsvParser.Record csvRecord) {
         Map<String, Object> values = new LinkedHashMap<>();
-        values.put("filename", csvRecord.filename);
+
+        // TODO add function for uniqueness
 
         // iterate groupBy and produce group key with values
         specification.groupByColumns.forEach((name, column) -> {

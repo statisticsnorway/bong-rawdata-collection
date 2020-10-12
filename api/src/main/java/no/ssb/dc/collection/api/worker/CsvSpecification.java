@@ -1,5 +1,7 @@
 package no.ssb.dc.collection.api.worker;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.nio.charset.Charset;
@@ -8,9 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include;
+import static java.util.stream.Collectors.toMap;
 
 @JsonInclude(Include.NON_NULL)
 public class CsvSpecification {
@@ -114,10 +116,10 @@ public class CsvSpecification {
             }
 
             Map<String, Position> positionKeys = positionByBuilders.stream().map(builder -> builder.build())
-                    .collect(Collectors.toMap(key -> key.internal(), value -> value, (Position e1, Position e2) -> e1, LinkedHashMap::new));
+                    .collect(toMap(key -> key.internal(), value -> value, (Position e1, Position e2) -> e1, LinkedHashMap::new));
 
             Map<String, Column> groupByColumns = groupByColumnBuilders.stream().map(Column.Builder::build)
-                    .collect(Collectors.toMap(key -> key.name, value -> value, (e1, e2) -> e1, LinkedHashMap::new));
+                    .collect(toMap(key -> key.name, value -> value, (e1, e2) -> e1, LinkedHashMap::new));
 
             return new CsvSpecification(
                     (BackendProvider) fieldMap.get("backend"),
@@ -247,6 +249,250 @@ public class CsvSpecification {
                         (Charset) map.get("charset"),
                         (String) map.get("contentType"),
                         (String) map.get("files")
+                );
+            }
+        }
+    }
+
+    @JsonInclude(Include.NON_NULL)
+    public static class Keys {
+        private final Map<String, Key> keyMap;
+
+        public Keys(Map<String, Key> keyMap) {
+            this.keyMap = keyMap;
+        }
+
+        /**
+         * KeyValue store key = keys(). If this is too granular, then expand with a custom marker.
+         */
+        @JsonGetter
+        public Map<String, Key> keys() {
+            return keyMap;
+        }
+
+        /**
+         * Rawdata position = positionKeys()
+         */
+        public Map<String, Key> positionKeys() {
+            return keyMap.entrySet().stream().filter(entry -> entry.getValue().isPosition()).collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+        }
+
+        /**
+         * Grouping of rawdata message content = groupByKeys()
+         */
+        public Map<String, Key> groupByKeys() {
+            return keyMap.entrySet().stream().filter(entry -> entry.getValue().isGroupBy()).collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+        }
+
+        public static class Builder {
+            final Map<String, Key.Builder<?, ?>> keyBuilderMap = new LinkedHashMap<>();
+
+            public <K extends Key.Builder<?, ?>> Builder key(K keyBuilder) {
+                keyBuilderMap.put(keyBuilder.name(), keyBuilder);
+                return this;
+            }
+
+            public Keys build() {
+                Map<String, Key> keyMap = keyBuilderMap.entrySet().stream().collect(toMap(Map.Entry::getKey, value -> (Key) value.getValue().build(), (e1, e2) -> e1, LinkedHashMap::new));
+                return new Keys(keyMap);
+            }
+        }
+    }
+
+    abstract public static class Key {
+        public final String name;
+        private final boolean partOfPosition;
+        private final boolean partOfGroupBy;
+
+        public Key(String name, boolean partOfPosition, boolean partOfGroupBy) {
+            this.name = name;
+            this.partOfPosition = partOfPosition;
+            this.partOfGroupBy = partOfGroupBy;
+        }
+
+        @JsonGetter
+        public String kind() {
+            return isColumn() ? "column" : isFunction() ? "function" : unsupported();
+        }
+
+        private String unsupported() {
+            throw new UnsupportedOperationException();
+        }
+
+        @JsonIgnore
+        public boolean isColumn() {
+            return this instanceof ColumnKey;
+        }
+
+        @JsonIgnore
+        public boolean isFunction() {
+            return this instanceof FunctionKey;
+        }
+
+        public boolean isPosition() {
+            return partOfPosition;
+        }
+
+        public boolean isGroupBy() {
+            return partOfGroupBy;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Key key = (Key) o;
+            return partOfPosition == key.partOfPosition &&
+                    partOfGroupBy == key.partOfGroupBy &&
+                    Objects.equals(name, key.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, partOfPosition, partOfGroupBy);
+        }
+
+        abstract public static class Builder<KEY, BUILDER> {
+            protected final Map<String, Object> map = new LinkedHashMap<>();
+
+            public BUILDER name(String name) {
+                map.put("name", name);
+                return (BUILDER) this;
+            }
+
+            String name() {
+                return (String) map.get("name");
+            }
+
+            public BUILDER position() {
+                map.put("position", true);
+                return (BUILDER) this;
+            }
+
+            public BUILDER groupBy() {
+                map.put("groupBy", true);
+                return (BUILDER) this;
+            }
+
+            abstract KEY build();
+        }
+    }
+
+    @JsonInclude(Include.NON_NULL)
+    public static class ColumnKey extends Key {
+        public final Class<?> type;
+        public final String format;
+
+        public ColumnKey(String name, Class<?> type, String format, boolean partOfPosition, boolean partOfGroupBy) {
+            super(name, partOfPosition, partOfGroupBy);
+            this.type = type;
+            this.format = format;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            ColumnKey columnKey = (ColumnKey) o;
+            return Objects.equals(type, columnKey.type) &&
+                    Objects.equals(format, columnKey.format);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), type, format);
+        }
+
+        @Override
+        public String toString() {
+            return "ColumnKey{" +
+                    "name='" + name + '\'' +
+                    ", partOfPosition=" + isPosition() +
+                    ", partOfGroupBy=" + isGroupBy() +
+                    ", type=" + type +
+                    ", format='" + format + '\'' +
+                    '}';
+        }
+
+        public static class Builder extends Key.Builder<ColumnKey, ColumnKey.Builder> {
+
+            public Builder type(Class<?> type) {
+                map.put("type", type);
+                return this;
+            }
+
+            public Builder format(String format) {
+                map.put("format", format);
+                return this;
+            }
+
+            @Override
+            ColumnKey build() {
+                if (!map.containsKey("name")) {
+                    throw new IllegalStateException("Collum name IS NOT defined!");
+                }
+                if (!map.containsKey("type")) {
+                    throw new IllegalStateException("Collum type IS NOT defined!");
+                }
+                return new ColumnKey(
+                        (String) map.get("name"),
+                        (Class<?>) map.get("type"),
+                        (String) map.get("format"),
+                        map.containsKey("position"),
+                        map.containsKey("groupBy")
+                );
+            }
+        }
+    }
+
+    @JsonInclude(Include.NON_NULL)
+    public static class FunctionKey extends Key {
+        public final KeyGenerator generator;
+
+        public FunctionKey(String name, KeyGenerator generator, boolean partOfPosition, boolean partOfGroupBy) {
+            super(name, partOfPosition, partOfGroupBy);
+            this.generator = generator;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            FunctionKey that = (FunctionKey) o;
+            return generator == that.generator;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), generator);
+        }
+
+        @Override
+        public String toString() {
+            return "FunctionKey{" +
+                    "name='" + name + '\'' +
+                    ", partOfPosition=" + isPosition() +
+                    ", partOfGroupBy=" + isGroupBy() +
+                    ", generator=" + generator +
+                    '}';
+        }
+
+        public static class Builder extends Key.Builder<FunctionKey, FunctionKey.Builder> {
+
+            public Builder generator(KeyGenerator generator) {
+                map.put("generator", generator);
+                return this;
+            }
+
+            @Override
+            FunctionKey build() {
+                return new FunctionKey(
+                        (String) map.get("name"),
+                        (KeyGenerator) map.get("generator"),
+                        map.containsKey("position"),
+                        map.containsKey("groupBy")
                 );
             }
         }

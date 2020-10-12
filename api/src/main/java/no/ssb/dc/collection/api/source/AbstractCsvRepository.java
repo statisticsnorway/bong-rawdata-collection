@@ -84,8 +84,9 @@ abstract public class AbstractCsvRepository<T extends RepositoryKey> implements 
                 isHeaderRecord.set(false);
             }
 
-            RepositoryKey sortableGroupKey = produceSortableKey.apply(record); // worker produces valid groupKey
+            RepositoryKey sortableGroupKey = produceSortableKey.apply(record); // worker produces valid groupKey (CsvDynamicWorker.createDynamicKey produces a toBuffer(key))
 
+            LOG.trace("{}: {}\n\t{}", csvReadLines.get(), sortableGroupKey, record.asLine());
             bufferedReadWrite.writeRecord(sortableGroupKey, record.asLine());
 
             if (csvReadLines.incrementAndGet() % 100000 == 0) {
