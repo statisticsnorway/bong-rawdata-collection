@@ -1,5 +1,7 @@
 package no.ssb.dc.collection.api.config;
 
+import java.util.Map;
+
 public interface SourceConfiguration extends BaseConfiguration {
 
     @Property("queue.poolSize")
@@ -38,4 +40,17 @@ public interface SourceConfiguration extends BaseConfiguration {
     @Property("rawdata.topic")
     String topic();
 
+    @Property("csv.dryRun")
+    Boolean hasDryRun();
+
+    @Property("csv.dryRun")
+    Integer dryRun();
+
+    static Map<String, String> sourceDefaultValues() {
+        return Map.of(
+                "queue.poolSize", "25000", // flush buffer on threshold
+                "queue.keyBufferSize", "511",
+                "queue.valueBufferSize", "2048"
+        );
+    }
 }

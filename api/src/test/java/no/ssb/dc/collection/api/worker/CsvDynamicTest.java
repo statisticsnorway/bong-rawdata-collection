@@ -64,23 +64,6 @@ public class CsvDynamicTest {
             )
             .build();
 
-    /*
-        .key(column()
-            .name("a)
-            .type(String)
-            .groupBy()
-            .position()
-        .key(function()
-            .name("lineIndex")
-            .generator(SEQUENCE)
-            .position()
-
-        Lag 3 keyMaps:
-            sourceKeyColumns (allColumns)
-            positionKeyColumns (position)
-            groupByColumn (comparator)
-     */
-
     static LocalFileSystemConfiguration targetConfiguration;
 
     @BeforeAll

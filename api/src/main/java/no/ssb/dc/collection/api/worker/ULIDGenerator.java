@@ -1,4 +1,4 @@
-package no.ssb.dc.collection.api.utils;
+package no.ssb.dc.collection.api.worker;
 
 import de.huxhorn.sulky.ulid.ULID;
 import org.slf4j.Logger;

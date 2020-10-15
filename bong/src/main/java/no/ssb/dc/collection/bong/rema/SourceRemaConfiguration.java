@@ -2,15 +2,17 @@ package no.ssb.dc.collection.bong.rema;
 
 import no.ssb.dc.collection.api.config.BaseConfiguration;
 import no.ssb.dc.collection.api.config.ConfigurationFactory;
+import no.ssb.dc.collection.api.config.EnvironmentPrefix;
 import no.ssb.dc.collection.api.config.Name;
-import no.ssb.dc.collection.api.config.Prefix;
+import no.ssb.dc.collection.api.config.Namespace;
 import no.ssb.dc.collection.api.config.Property;
 import no.ssb.dc.collection.api.config.RequiredKeys;
 
 import java.util.Map;
 
 @Name("source-rema")
-@Prefix("source.")
+@Namespace("source.")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "source.year",
         "source.month"

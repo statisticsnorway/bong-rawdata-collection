@@ -3,6 +3,7 @@ package no.ssb.dc.collection.api.jdbc;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import no.ssb.dc.collection.api.config.SourcePostgresConfiguration;
+import no.ssb.dc.collection.api.utils.FileAndClasspathReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

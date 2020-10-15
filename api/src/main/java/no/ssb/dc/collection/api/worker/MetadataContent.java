@@ -9,18 +9,18 @@ import java.time.format.DateTimeFormatter;
 
 public class MetadataContent {
 
-    private final ObjectNode elementNode;
+    private final ArrayNode elementsArray;
 
-    public MetadataContent(ObjectNode elementNode) {
-        this.elementNode = elementNode;
+    public MetadataContent(ArrayNode elementsArray) {
+        this.elementsArray = elementsArray;
     }
 
-    public ObjectNode getElementNode() {
-        return elementNode;
+    public ArrayNode getElementNode() {
+        return elementsArray;
     }
 
     public String toJSON() {
-        return JsonParser.createJsonParser().toJSON(elementNode);
+        return JsonParser.createJsonParser().toJSON(elementsArray);
     }
 
     public static class Builder {
@@ -76,6 +76,11 @@ public class MetadataContent {
             return this;
         }
 
+        public Builder resourceType(String resourceType) {
+            metadataNode.put("resource-type", resourceType);
+            return this;
+        }
+
         public Builder contentType(String contentType) {
             metadataNode.put("content-type", contentType);
             return this;
@@ -96,6 +101,11 @@ public class MetadataContent {
             return this;
         }
 
+        public Builder recordType(String recordType) {
+            mappingInfo.put("record-type", recordType);
+            return this;
+        }
+
         public Builder delimiter(String delimiterString) {
             mappingInfo.put("delimiter", delimiterString);
             return this;
@@ -109,17 +119,21 @@ public class MetadataContent {
 
         public Builder csvMapping(String csvColumn, String avroColumn) {
             ObjectNode mappingNode = jsonParser.createObjectNode();
-            mappingNode.put(csvColumn, avroColumn);
+            mappingNode.put("name", csvColumn);
+            mappingNode.put("mapped-name", avroColumn);
+            mappingNode.put("data-type", String.class.getSimpleName());
             mappingArray.add(mappingNode);
             return this;
         }
 
         public MetadataContent build() {
+            ArrayNode elementsArray = jsonParser.createArrayNode();
             ObjectNode elementNode = jsonParser.createObjectNode();
             elementNode.set("metadata", metadataNode);
-            mappingInfo.set("csv-to-avro-column", mappingArray);
+            mappingInfo.set("fields", mappingArray);
             elementNode.set("schema", mappingInfo);
-            return new MetadataContent(elementNode);
+            elementsArray.add(elementNode);
+            return new MetadataContent(elementsArray);
         }
     }
 }

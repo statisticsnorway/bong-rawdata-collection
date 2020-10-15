@@ -1,9 +1,12 @@
 package no.ssb.dc.collection.api.config;
 
+import no.ssb.dc.collection.api.config.internal.MapBuilder;
+
 import java.util.Map;
 
 @Name("source-lmdb")
-@Prefix("source.")
+@Namespace("source")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "source.lmdb.path",
         "source.rawdata.topic",
@@ -23,12 +26,10 @@ public interface SourceLmdbConfiguration extends SourceConfiguration {
 
     @Override
     default Map<String, String> defaultValues() {
-        return Map.of(
-                "queue.poolSize", "25000", // flush buffer on threshold
-                "queue.keyBufferSize", "511",
-                "queue.valueBufferSize", "2048",
-                "lmdb.sizeInMb", "500"
-        );
+        return MapBuilder.create()
+                .defaults(SourceConfiguration.sourceDefaultValues())
+                .values("lmdb.sizeInMb", "500")
+                .build();
     }
 
     static SourceLmdbConfiguration create() {

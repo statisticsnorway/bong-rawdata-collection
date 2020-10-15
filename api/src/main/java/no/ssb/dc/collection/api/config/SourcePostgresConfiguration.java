@@ -1,9 +1,12 @@
 package no.ssb.dc.collection.api.config;
 
+import no.ssb.dc.collection.api.config.internal.MapBuilder;
+
 import java.util.Map;
 
 @Name("source-postgres")
-@Prefix("source.")
+@Namespace("source")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "source.postgres.driver.host",
         "source.postgres.driver.port",
@@ -33,16 +36,14 @@ public interface SourcePostgresConfiguration extends SourceConfiguration {
 
     @Override
     default Map<String, String> defaultValues() {
-        return Map.of(
-                "queue.poolSize", "25000", // flush buffer on threshold
-                "queue.keyBufferSize", "511",
-                "queue.valueBufferSize", "2048",
-                "postgres.driver.host", "localhost",
-                "postgres.driver.port", "5432",
-                "postgres.driver.user", "bong",
-                "postgres.driver.password", "bong",
-                "postgres.driver.database", "bong"
-        );
+        return MapBuilder.create()
+                .defaults(SourceConfiguration.sourceDefaultValues())
+                .values("postgres.driver.host", "localhost")
+                .values("postgres.driver.port", "5432")
+                .values("postgres.driver.user", "bong")
+                .values("postgres.driver.password", "bong")
+                .values("postgres.driver.database", "bong")
+                .build();
     }
 
     static SourcePostgresConfiguration create() {

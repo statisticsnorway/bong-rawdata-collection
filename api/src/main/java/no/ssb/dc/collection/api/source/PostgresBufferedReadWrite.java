@@ -39,12 +39,9 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
         this.specification = specification;
         this.threadPool = FixedThreadPool.newInstance();
         this.topic = configuration.topic();
-        int queuePoolSize = configuration.queuePoolSize();
-        int keySize = configuration.hasQueueKeyBufferSize() == null ? 511 : configuration.queueKeyBufferSize();
-        int valueSize = configuration.hasQueueValueBufferSize() == null ? 2048 : configuration.queueValueBufferSize();
-        this.bufferQueue = new LinkedBlockingDeque<>(queuePoolSize);
-        this.keyPool = new DirectByteBufferPool(queuePoolSize + 1, keySize);
-        this.valuePool = new DirectByteBufferPool(queuePoolSize + 1, valueSize);
+        this.bufferQueue = new LinkedBlockingDeque<>(configuration.queuePoolSize());
+        this.keyPool = new DirectByteBufferPool(configuration.queuePoolSize() + 1, configuration.queueKeyBufferSize());
+        this.valuePool = new DirectByteBufferPool(configuration.queuePoolSize() + 1, configuration.queueValueBufferSize());
     }
 
     void createTopicIfNotExists(String topic, boolean dropAndCreateDatabase) {
@@ -68,7 +65,7 @@ public class PostgresBufferedReadWrite implements BufferedReadWrite {
                         byte[] value = new byte[buffer.getValue().remaining()];
                         buffer.getKey().get(key);
                         buffer.getValue().get(value);
-                        ps.setBytes(1, key);
+                        ps.setBytes(1, key);  // sortable byte buffer
                         ps.setBytes(2, value);
                         ps.setTimestamp(3, Timestamp.from(new Date().toInstant()));
                         ps.addBatch();

@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class SequenceGenerator {
 
-    enum Subject {
+    public enum Subject {
         DYNAMIC_KEY,
         POSITION_KEY;
     }

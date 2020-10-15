@@ -2,6 +2,15 @@
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+#
+# In prodsone create 'rawdata-cli-config.env' with SUDO and NETWORK
+#
+if [ -f "$WORKDIR/rawdata-cli-config.env" ]; then
+  set -a
+  source "$WORKDIR/rawdata-cli-config.env"
+  set +a
+fi
+
 RELEASE_IMAGE="statisticsnorway/rawdata-collection-client:0.1"
 LOCAL_IMAGE="rawdata-collection-client:dev"
 CONTAINER_IMAGE="$LOCAL_IMAGE"
@@ -57,19 +66,28 @@ log() {
 }
 
 validate() {
+  if [ -n "$LOCAL_AVRO_FOLDER" ]; then
+    USE_LOCAL_CONFIGURATION=true
+  fi
+
   LOCAL_RAWDATA_SECRET_FILEPATH="$LOCAL_SECRET_FOLDER/$RAWDATA_SECRET_FILE"
-  if [ -n "$LOCAL_RAWDATA_SECRET_FILEPATH" ] && [ ! -f "$LOCAL_RAWDATA_SECRET_FILEPATH" ]; then
+  if [ -z "$USE_LOCAL_CONFIGURATION" ] && [ -n "$LOCAL_RAWDATA_SECRET_FILEPATH" ] && [ ! -f "$LOCAL_RAWDATA_SECRET_FILEPATH" ]; then
     echo "Secret file is NOT found!"
     exit 0
   fi
 
+  if [ -z "$USE_LOCAL_CONFIGURATION" ] && ([ -z "$LOCAL_SECRET_FOLDER" ] || [ ! -d "$LOCAL_SECRET_FOLDER" ]); then
+    echo "Local secret directory NOT found!"
+    exit 0
+  fi
+
   LOCAL_BUCKET_SA_FILEPATH="$LOCAL_SECRET_FOLDER/$BUCKET_SA_FILE"
-  if [ -n "$LOCAL_BUCKET_SA_FILEPATH" ] && [ ! -f "$LOCAL_BUCKET_SA_FILEPATH" ]; then
+  if [ -z "$USE_LOCAL_CONFIGURATION" ] && [ -n "$LOCAL_BUCKET_SA_FILEPATH" ] && [ ! -f "$LOCAL_BUCKET_SA_FILEPATH" ]; then
     echo "Service account json file NOT found!"
     exit 0
   fi
 
-  if [ -z "$BUCKET_NAME" ]; then
+  if [ -z "$USE_LOCAL_CONFIGURATION" ] && [ -z "$BUCKET_NAME" ]; then
     echo "Bucket name is NOT set!"
     exit 0
   fi
@@ -82,11 +100,6 @@ validate() {
   PROPERTY_FULL_FILE_PATH="$WORKDIR/conf/$PROPERTY_FILE"
   if [ -z "$PROPERTY_FULL_FILE_PATH" ] || [ ! -f "$PROPERTY_FULL_FILE_PATH" ]; then
     echo "Property file NOT found!"
-    exit 0
-  fi
-
-  if [ -z "$LOCAL_SECRET_FOLDER" ] || [ ! -d "$LOCAL_SECRET_FOLDER" ]; then
-    echo "Local secret directory NOT found!"
     exit 0
   fi
 
@@ -124,29 +137,41 @@ evaluateRawdataSecrets() {
 evaluateDockerEnvironmentVariables() {
   DOCKER_ENV_VARS=""
 
+  if [ -n "$TARGET" ]; then
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e BONG_target=$TARGET"
+  fi
+
   if [ -n "$ENCRYPTION_KEY" ] && [ -n "$ENCRYPTION_SALT" ]; then
-    DOCKER_ENV_VARS="-e BONG_target.rawdata.encryptionKey=$ENCRYPTION_KEY -e BONG_target.rawdata.encryptionSalt=$ENCRYPTION_SALT "
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e BONG_target.rawdata.encryptionKey=$ENCRYPTION_KEY -e BONG_target.rawdata.encryptionSalt=$ENCRYPTION_SALT "
+  fi
+
+  if [ -n "$PROXY_HOST" ] && [ -n "$PROXY_PORT" ]; then
+    DOCKER_PROXY_VARS="-e PROXY_HTTPS_HOST=$PROXY_HOST -e PROXY_HTTPS_PORT=$PROXY_PORT"
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS $DOCKER_PROXY_VARS"
   fi
 
   if [ -n "$BUCKET_SA_FILE" ]; then
     CONTAINER_BUCKET_SA_FILEPATH="/secret/$BUCKET_SA_FILE"
-    DOCKER_ENV_VARS="$DOCKER_ENV_VARS-e BONG_target.gcs.service-account.key-file=$CONTAINER_BUCKET_SA_FILEPATH "
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e BONG_target.gcs.service-account.key-file=$CONTAINER_BUCKET_SA_FILEPATH "
   fi
 
   while read -r line; do
     ENV_VAR=$(eval echo "$line")
     if [[ ! "$ENV_VAR" == "#*" ]] && [[ -n "$ENV_VAR" ]]; then
       log "ENV_VAR: $ENV_VAR"
-      DOCKER_ENV_VARS="$DOCKER_ENV_VARS-e BONG_${ENV_VAR} "
+      DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e BONG_${ENV_VAR} "
     fi
   done <"$WORKDIR/conf/$PROPERTY_FILE"
 
   # if local avro folder is set, use filesystem rawdata provider
   DOCKER_VOLUME_VARS=""
   if [ -n "$LOCAL_AVRO_FOLDER" ]; then
-    DOCKER_ENV_VARS="$DOCKER_ENV_VARS-e BONG_target.rawdata.client.provider=filesystem"
-    DOCKER_VOLUME_VARS="$DOCKER_VOLUME_VARS-v $LOCAL_AVRO_FOLDER:/export:Z "
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e BONG_target.rawdata.client.provider=filesystem"
+    DOCKER_VOLUME_VARS="$DOCKER_VOLUME_VARS -v $LOCAL_AVRO_FOLDER:/export:Z "
+  fi
 
+  if [ -n "$DRY_RUN" ]; then
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e BONG_source.csv.dryRun=$DRY_RUN"
   fi
 
   log "DOCKER_ENV_VARS: $DOCKER_ENV_VARS"
@@ -156,22 +181,22 @@ evaluateDockerEnvironmentVariables() {
 # Create Source Database and Target Avro docker volumes
 #
 createDockerVolumes() {
-  LOCAL_DATABASE_VOLUME_EXISTS="$(docker volume ls -f "name=$LOCAL_DATABASE_VOLUME" -q)"
+  LOCAL_DATABASE_VOLUME_EXISTS="$($SUDO docker volume ls -f "name=$LOCAL_DATABASE_VOLUME" -q)"
   if [ -z "$LOCAL_DATABASE_VOLUME_EXISTS" ]; then
     echo "Create Volume: $LOCAL_DATABASE_VOLUME"
-    docker volume create "$LOCAL_DATABASE_VOLUME"
+    $SUDO docker volume create "$LOCAL_DATABASE_VOLUME"
   fi
 
-  LOCAL_AVRO_VOLUME_EXISTS="$(docker volume ls -f "name=$LOCAL_AVRO_VOLUME" -q)"
+  LOCAL_AVRO_VOLUME_EXISTS="$($SUDO docker volume ls -f "name=$LOCAL_AVRO_VOLUME" -q)"
   if [ -z "$LOCAL_AVRO_VOLUME_EXISTS" ]; then
     echo "Create Volume: $LOCAL_AVRO_VOLUME"
-    docker volume create "$LOCAL_AVRO_VOLUME"
+    $SUDO docker volume create "$LOCAL_AVRO_VOLUME"
   fi
 }
 
 test_run() {
   if [ "$ACTION" = "test-gcs-write" ]; then
-    docker run -it \
+    $SUDO docker run -it ${NETWORK} \
       -e BONG_action="$ACTION" \
       -e BONG_target="$TARGET" \
       ${DOCKER_ENV_VARS} \
@@ -183,10 +208,9 @@ test_run() {
 }
 
 run() {
-  set -x
-  docker run -it \
+  set +x
+  $SUDO docker run -it ${NETWORK} \
     -e BONG_action="$ACTION" \
-    -e BONG_target="$TARGET" \
     ${DOCKER_ENV_VARS} \
     -v "$LOCAL_SECRET_FOLDER":/secret:Z \
     -v "$LOCAL_CONF_FOLDER":/conf:Z \

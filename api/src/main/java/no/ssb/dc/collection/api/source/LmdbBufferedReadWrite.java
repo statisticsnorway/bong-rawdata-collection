@@ -29,12 +29,9 @@ public class LmdbBufferedReadWrite implements BufferedReadWrite {
     public LmdbBufferedReadWrite(SourceConfiguration configuration, LmdbEnvironment lmdbEnvironment, CsvSpecification specification) {
         this.lmdbEnvironment = lmdbEnvironment;
         this.specification = specification;
-        int queuePoolSize = configuration.queuePoolSize();
-        int keySize = configuration.hasQueueKeyBufferSize() ? 511 : configuration.queueKeyBufferSize();
-        int valueSize = configuration.hasQueueValueBufferSize() ? 2048 : configuration.queueValueBufferSize();
-        this.bufferQueue = new LinkedBlockingDeque<>(queuePoolSize);
-        this.keyPool = new DirectByteBufferPool(queuePoolSize + 1, keySize);
-        this.valuePool = new DirectByteBufferPool(queuePoolSize + 1, valueSize);
+        this.bufferQueue = new LinkedBlockingDeque<>(configuration.queuePoolSize());
+        this.keyPool = new DirectByteBufferPool(configuration.queuePoolSize() + 1, configuration.queueKeyBufferSize());
+        this.valuePool = new DirectByteBufferPool(configuration.queuePoolSize() + 1, configuration.queueValueBufferSize());
         this.metaDbi = lmdbEnvironment.openMetaDb();
         this.recordDbi = lmdbEnvironment.openRecordDb();
     }

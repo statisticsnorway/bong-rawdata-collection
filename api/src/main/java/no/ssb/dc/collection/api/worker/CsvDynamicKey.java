@@ -1,7 +1,6 @@
 package no.ssb.dc.collection.api.worker;
 
 import no.ssb.dc.collection.api.source.RepositoryKey;
-import no.ssb.dc.collection.api.utils.ULIDGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +78,7 @@ public class CsvDynamicKey implements RepositoryKey {
     }
 
     @Override
-    public ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
+    public void toByteBuffer(ByteBuffer allocatedBuffer) {
         Objects.requireNonNull(allocatedBuffer);
         for (Map.Entry<String, CsvSpecification.Key> entry : specification.columns.keys().entrySet()) {
             if (!values.containsKey(entry.getKey())) {
@@ -107,7 +106,7 @@ public class CsvDynamicKey implements RepositoryKey {
                 throw new UnsupportedOperationException("Value type not supported: " + entry.getKey());
             }
         }
-        return allocatedBuffer.flip();
+        allocatedBuffer.flip();
     }
 
     @Override

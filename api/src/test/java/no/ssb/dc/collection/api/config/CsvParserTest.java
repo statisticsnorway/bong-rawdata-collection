@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class CsvParserTest {
 
@@ -26,7 +27,7 @@ public class CsvParserTest {
     @Test
     public void csvParser() {
         BufferedReader reader = new BufferedReader(new StringReader(CSV_1));
-        CsvParser parser = new CsvParser(reader, Paths.get(".").toString(), "test", ';');
+        CsvParser parser = new CsvParser(reader, Paths.get(".").toString(), List.of("test"), "test", ';', -1);
         parser.parse(record -> {
             LOG.trace("record: {} -- {} -- {}", record.tokens.get(0), record.asLine(), record.headers);
         });

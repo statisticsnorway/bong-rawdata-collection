@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set +e
+
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Show usage
@@ -13,20 +15,21 @@ usage() {
 
 $0 [options]
 
-    -a | --action                  <action>                      (mandatory)
-    -t | --target                  <target>                      (optional)
-    -b | --bucket                  <bucket name>                 (mandatory)
-   -sa | --service-account         <gcs service account json>    (optional)
-   -to | --topic                   <rawdata topic>               (mandatory)
-  -msf | --mount-secret-folder     <mount secrets folder>        (optional)
-  -rsf | --rawdata-secret-file     <encryption secrets>          (mandatory)
-  -mcf | --mount-conf-folder       <mount conf folder>           (optional)
-   -pf | --property-file           <property file>               (optional)
-  -msd | --mount-spec-folder       <mount spec folder>           (optional)
-   -sf | --spec-file               <sepc file>                   (optional)
-  -mif | --mount-source-folder     <mount import source folder>  (required)
-  -csv | --csv-files               <import csv files (use: ,)>   (optional)
-  -mef | --mount-export-folder     <mount avro export folder>    (optional)
+    -a | --action                  <action>                        (mandatory)
+    -t | --target                  <target>                        (optional)
+    -b | --bucket                  <bucket name>                   (mandatory)
+   -sa | --service-account         <gcs service account json>      (optional)
+   -to | --topic                   <rawdata topic>                 (mandatory)
+  -msf | --mount-secret-folder     <mount secrets folder>          (optional)
+  -rsf | --rawdata-secret-file     <encryption secrets>            (mandatory)
+  -mcf | --mount-conf-folder       <mount conf folder>             (optional)
+   -pf | --property-file           <property file>                 (optional)
+  -msd | --mount-spec-folder       <mount spec folder>             (optional)
+   -sf | --spec-file               <sepc file>                     (optional)
+  -mif | --mount-source-folder     <mount import source folder>    (required)
+  -csv | --csv-files               <import csv files (use: ,)>     (optional)
+  -mef | --mount-export-folder     <mount avro export folder>      (optional)
+   -dr | --dry-run                 <stop at number of iterations>  (optional)
     -h | --help
 
 Example:
@@ -98,6 +101,10 @@ while [ "$1" != "" ]; do
   -mef | --mount-export-folder)
     shift
     LOCAL_AVRO_FOLDER=$1
+    ;;
+  -dr | --dry-run)
+    shift
+    DRY_RUN=$1
     ;;
   -h | --help)
     usage

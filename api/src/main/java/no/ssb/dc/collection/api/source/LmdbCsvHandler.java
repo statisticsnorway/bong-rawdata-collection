@@ -15,28 +15,32 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class LmdbCsvRepository<T extends RepositoryKey> extends AbstractCsvRepository<T> {
+public class LmdbCsvHandler<T extends RepositoryKey> implements CsvHandler<T> {
 
-    static final Logger LOG = LoggerFactory.getLogger(LmdbCsvRepository.class);
+    static final Logger LOG = LoggerFactory.getLogger(LmdbCsvHandler.class);
 
     private final RawdataClient rawdataClient;
+    private final TargetConfiguration targetConfiguration;
+    private final CsvSpecification specification;
+    private final Class<T> keyClass;
+    private final BiPredicate<T, T> isPrevKeyPartOfCurrentKey;
     private final SourceLmdbConfiguration sourceConfiguration;
 
-
-    public LmdbCsvRepository(SourceLmdbConfiguration sourceConfiguration,
-                             TargetConfiguration targetConfiguration,
-                             CsvSpecification specification,
-                             Class<T> keyClass,
-                             BiPredicate<T, T> isPrevKeyPartOfCurrentKey) {
-        super(sourceConfiguration, targetConfiguration, specification, keyClass, isPrevKeyPartOfCurrentKey);
+    public LmdbCsvHandler(SourceLmdbConfiguration sourceConfiguration,
+                          TargetConfiguration targetConfiguration,
+                          CsvSpecification specification,
+                          Class<T> keyClass,
+                          BiPredicate<T, T> isPrevKeyPartOfCurrentKey) {
         this.sourceConfiguration = sourceConfiguration;
-        rawdataClient = ProviderConfigurator.configure(targetConfiguration.asMap(), this.targetConfiguration.rawdataClientProvider(), RawdataClientInitializer.class);
+        rawdataClient = ProviderConfigurator.configure(targetConfiguration.asMap(), targetConfiguration.rawdataClientProvider(), RawdataClientInitializer.class);
+        this.targetConfiguration = targetConfiguration;
+        this.specification = specification;
+        this.keyClass = keyClass;
+        this.isPrevKeyPartOfCurrentKey = isPrevKeyPartOfCurrentKey;
     }
 
     /**
@@ -49,21 +53,7 @@ public class LmdbCsvRepository<T extends RepositoryKey> extends AbstractCsvRepos
         var csvReader = new CsvReader(sourceConfiguration, specification);
         try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(sourceConfiguration, true)) {
             try (BufferedReadWrite bufferedReadWrite = new LmdbBufferedReadWrite(sourceConfiguration, lmdbEnvironment, specification)) {
-                this.readCsvFileAndPrepareDatabase(csvReader, bufferedReadWrite, produceSortableKey);
-            }
-        }
-    }
-
-    /**
-     * Iterate source and consume position groups
-     *
-     * @param entrySetCallback a group of records by key
-     */
-    @Override
-    public void consume(Consumer<Map<T, String>> entrySetCallback) {
-        try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(sourceConfiguration, false)) {
-            try (BufferedReadWrite bufferedReadWrite = new LmdbBufferedReadWrite(sourceConfiguration, lmdbEnvironment, specification)) {
-                this.readDatabaseAndHandleGroup(bufferedReadWrite, entrySetCallback);
+                csvReader.readAndBufferedWrite(bufferedReadWrite, produceSortableKey);
             }
         }
     }
@@ -72,17 +62,17 @@ public class LmdbCsvRepository<T extends RepositoryKey> extends AbstractCsvRepos
      * Produce Rawdata
      */
     @Override
-    public void  produce() {
+    public void produce() {
         try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(sourceConfiguration, false)) {
             var producer = rawdataClient.producer(targetConfiguration.topic());
 
-            try (BufferedRawdataProducer bufferedProducer = new BufferedRawdataProducer(targetConfiguration, 1000, producer)) {
+            try (BufferedRawdataProducer bufferedProducer = new BufferedRawdataProducer(sourceConfiguration, targetConfiguration, specification, producer)) {
                 try (BufferedReadWrite bufferedReadWrite = new LmdbBufferedReadWrite(sourceConfiguration, lmdbEnvironment, specification)) {
-                    this.readDatabaseAndProduceRawdata(bufferedReadWrite, bufferedProducer);
+                    bufferedProducer.readDatabaseAndProduceRawdata(bufferedReadWrite, keyClass, isPrevKeyPartOfCurrentKey);
                 }
 
                 var targetLocalTempPath = Paths.get(targetConfiguration.localTempFolder() + "/" + targetConfiguration.topic());
-                if (targetLocalTempPath.toFile().exists()) {
+                if (Files.isReadable(targetLocalTempPath)) {
                     LOG.info("Avro-file Count: {}: {}\n\t{}", targetLocalTempPath.toString(), Files.list(targetLocalTempPath).count(),
                             Files.walk(targetLocalTempPath).filter(Files::isRegularFile).map(Path::toString).collect(Collectors.joining("\n\t")));
                 }

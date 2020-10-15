@@ -26,7 +26,7 @@ public class LmdbEnvironment implements AutoCloseable {
     private final Path databaseDir;
     private final Env<ByteBuffer> env;
     private final String topic;
-    private boolean dropDatabase;
+    private final boolean dropDatabase;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final long mapSize;
     private final int numberOfDbs;
@@ -36,24 +36,20 @@ public class LmdbEnvironment implements AutoCloseable {
     public LmdbEnvironment(SourceLmdbConfiguration configuration, boolean dropDatabase) {
         this.topic = configuration.topic();
         this.dropDatabase = dropDatabase;
-        String databasePath = configuration.lmdbPath();
-        if (databasePath.contains("$PROJECT_DIR")) {
-            databasePath = databasePath.replace("$PROJECT_DIR", Paths.get(".").normalize().resolve(databasePath).toString());
-        }
-        this.databaseDir = Paths.get(databasePath).resolve(topic);
+        this.databaseDir = Paths.get(configuration.lmdbPath()).normalize().resolve(topic);
         LOG.debug("DbPath: {}", databaseDir);
-        if (dropDatabase && databaseDir.toFile().exists()) {
+        if (dropDatabase && Files.isReadable(databaseDir)) {
             removePath(databaseDir);
         }
-        createDirectories(this.databaseDir);
-        mapSize = configuration.hasLmdbSizeInMb() != null ? configuration.lmdbSizeInMb() : 50;
+        createDirectories(databaseDir);
+        mapSize = configuration.lmdbSizeInMb();
         numberOfDbs = 2;
         env = createEnvironment();
     }
 
     public static void removePath(Path path) {
         try {
-            if (path.toFile().exists())
+            if (Files.isReadable(path))
                 Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -62,14 +58,6 @@ public class LmdbEnvironment implements AutoCloseable {
 
     public Env<ByteBuffer> env() {
         return env;
-    }
-
-    public int maxKeySize() {
-        return env.getMaxKeySize();
-    }
-
-    public Path getDatabaseDir() {
-        return databaseDir;
     }
 
     private void createDirectories(Path databaseDir) {

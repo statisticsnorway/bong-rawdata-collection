@@ -1,9 +1,12 @@
 package no.ssb.dc.collection.api.config;
 
+import no.ssb.dc.collection.api.config.internal.MapBuilder;
+
 import java.util.Map;
 
 @Name("source-no-db")
-@Prefix("source.")
+@Namespace("source")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "source.rawdata.topic",
         "source.csv.filepath",
@@ -13,11 +16,9 @@ public interface SourceNoDbConfiguration extends SourceConfiguration {
 
     @Override
     default Map<String, String> defaultValues() {
-        return Map.of(
-                "queue.poolSize", "25000", // flush buffer on threshold
-                "queue.keyBufferSize", "511",
-                "queue.valueBufferSize", "2048"
-        );
+        return MapBuilder.create()
+                .defaults(SourceConfiguration.sourceDefaultValues())
+                .build();
     }
 
     static SourceNoDbConfiguration create() {

@@ -37,13 +37,14 @@ public class Application implements Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Application.class);
     static final String DEBUG_CONFIG_OVERRIDE = "rawdata-client-debug-config-override";
+    private static CsvSpecification specification;
 
     private static Collection<Command> initializeCommands(BootstrapConfiguration configuration, Map<String, String> overrideConfig, Callback printCommands) {
         TargetConfiguration targetConfiguration = configuration.isHelpAction() ?
                 null :
                 (configuration.useGCSConfiguration() ? GCSConfiguration.create(overrideConfig) : LocalFileSystemConfiguration.create(overrideConfig));
 
-        CsvSpecification specification = getSpecification(configuration);
+        specification = getSpecification(configuration);
 
         return List.of(
                 new Command("test-gcs-write", null, () -> {
@@ -51,6 +52,11 @@ public class Application implements Runnable {
                     new RawdataGCSTestWrite().produceRawdataToGCS(Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")));
                 }),
                 new Command("produce", "dynamic-no-cache", () -> {
+                    try (var worker = new CsvDynamicWorker(SourceNoDbConfiguration.create(overrideConfig), targetConfiguration, specification)) {
+                        worker.produce();
+                    }
+                }),
+                new Command("generate", "dynamic-no-cache", () -> {
                     try (var worker = new CsvDynamicWorker(SourceNoDbConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.produce();
                     }
@@ -65,6 +71,12 @@ public class Application implements Runnable {
                         worker.produce();
                     }
                 }),
+                new Command("generate", "dynamic-lmdb", () -> {
+                    try (var worker = new CsvDynamicWorker(SourceLmdbConfiguration.create(overrideConfig), targetConfiguration, specification)) {
+                        worker.prepare();
+                        worker.produce();
+                    }
+                }),
                 new Command("prepare", "dynamic-postgres", () -> {
                     try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(overrideConfig), targetConfiguration, specification)) {
                         worker.prepare();
@@ -72,6 +84,12 @@ public class Application implements Runnable {
                 }),
                 new Command("produce", "dynamic-postgres", () -> {
                     try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(overrideConfig), targetConfiguration, specification)) {
+                        worker.produce();
+                    }
+                }),
+                new Command("generate", "dynamic-postgres", () -> {
+                    try (var worker = new CsvDynamicWorker(SourcePostgresConfiguration.create(overrideConfig), targetConfiguration, specification)) {
+                        worker.prepare();
                         worker.produce();
                     }
                 }),
@@ -121,7 +139,8 @@ public class Application implements Runnable {
     }
 
     boolean isTarget(String target) {
-        return configuration.hasTarget() && configuration.target().equals(target);
+        return (specification != null && specification.backend != null &&
+                target.endsWith(specification.backend.provider)) || (configuration.hasTarget() && configuration.target().equals(target));
     }
 
     void printCommands() {
@@ -138,10 +157,15 @@ public class Application implements Runnable {
 
         LOG.info("Rawdata Client Provider: {}", configuration.rawdataClientProvider());
 
+        String overrideTarget = specification != null && specification.backend != null ?
+                "dynamic-" + specification.backend.provider :
+                null;
+
         for (Command command : commands) {
-            if ((isAction(command.action) && command.target == null) || (isAction(command.action) && isTarget(command.target))) {
+            String target = overrideTarget != null ? overrideTarget : command.target;
+            if ((isAction(command.action) && target == null) || (isAction(command.action) && isTarget(target))) {
                 valid = true;
-                LOG.info("Execute action: {} and target: {}", command.action, command.target);
+                LOG.info("Execute action: {} and target: {}", command.action, target);
                 command.callback.execute();
                 completed.set(true);
                 break;

@@ -82,7 +82,6 @@ public class CsvSpecification {
             return this;
         }
 
-
         public CsvSpecification build() {
             if (metadataBuilder == null) {
                 throw new IllegalStateException("No metadata definition defined!");
@@ -114,7 +113,6 @@ public class CsvSpecification {
         public final String description;
 
         public Metadata(String source, String dataset, String tag, String description) {
-
             this.source = source;
             this.dataset = dataset;
             this.tag = tag;
@@ -230,6 +228,7 @@ public class CsvSpecification {
 
     @JsonInclude(Include.NON_NULL)
     public static class ColumnKeys {
+
         private final Map<String, Key> keyMap;
 
         public ColumnKeys(Map<String, Key> keyMap) {
@@ -311,6 +310,7 @@ public class CsvSpecification {
 
     @JsonInclude(Include.NON_NULL)
     abstract public static class Key {
+
         public final String name;
         public final Class<?> type;
         private final boolean partOfPosition;
@@ -468,6 +468,7 @@ public class CsvSpecification {
 
     @JsonInclude(Include.NON_NULL)
     public static class FunctionKey extends Key {
+
         public final KeyGenerator generator;
 
         public FunctionKey(String name, Class<?> type, KeyGenerator generator, boolean partOfPosition, boolean partOfGroupBy) {

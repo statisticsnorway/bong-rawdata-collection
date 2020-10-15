@@ -91,7 +91,7 @@ abstract public class GenericKey implements RepositoryKey {
     }
 
     @Override
-    public ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
+    public void toByteBuffer(ByteBuffer allocatedBuffer) {
         Objects.requireNonNull(allocatedBuffer);
         for (Map.Entry<String, Class<?>> entry : keys().entrySet()) {
             if (!values.containsKey(entry.getKey())) {
@@ -119,7 +119,7 @@ abstract public class GenericKey implements RepositoryKey {
                 throw new UnsupportedOperationException("Value type not supported: " + entry.getKey());
             }
         }
-        return allocatedBuffer.flip();
+        allocatedBuffer.flip();
     }
 
     @Override

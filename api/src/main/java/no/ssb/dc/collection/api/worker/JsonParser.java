@@ -32,7 +32,6 @@ public class JsonParser {
         return new JsonParser(YAML_OBJECT_MAPPER);
     }
 
-
     public ObjectMapper mapper() {
         return mapper;
     }

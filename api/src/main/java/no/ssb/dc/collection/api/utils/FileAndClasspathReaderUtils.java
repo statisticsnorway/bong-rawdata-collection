@@ -1,4 +1,4 @@
-package no.ssb.dc.collection.api.jdbc;
+package no.ssb.dc.collection.api.utils;
 
 import java.io.IOException;
 import java.io.InputStream;

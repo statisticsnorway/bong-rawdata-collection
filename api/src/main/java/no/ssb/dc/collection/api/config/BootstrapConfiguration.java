@@ -4,7 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 
 @Name("bootstrap")
-@Prefix("")
+@Namespace("")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "action"
 })

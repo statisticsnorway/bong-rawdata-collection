@@ -24,8 +24,6 @@ public class SpecificationDeserializer {
 
             ObjectMapper objectMapper = jsonParser.mapper();
             JsonNode root = objectMapper.readValue(data, JsonNode.class);
-            String yaml = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
-            System.out.printf("yaml:%n%s%n", yaml);
 
             checkIfFieldExists(root, "backend");
             checkIfFieldExists(root, "metadata");

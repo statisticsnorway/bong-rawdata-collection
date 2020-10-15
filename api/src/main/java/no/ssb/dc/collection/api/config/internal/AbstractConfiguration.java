@@ -11,11 +11,12 @@ abstract public class AbstractConfiguration implements Configuration {
 
     protected final StoreBasedDynamicConfiguration configuration;
 
-    protected AbstractConfiguration(String prefix,
+    protected AbstractConfiguration(String environmentPrefix,
+                                    String namespace,
                                     Map<String, String> defaultKeyValuePairs,
                                     Map<String, String> overrideKeyValuePairs) {
 
-        Objects.requireNonNull(prefix);
+        Objects.requireNonNull(namespace);
         Objects.requireNonNull(defaultKeyValuePairs);
 
         // set default config
@@ -26,18 +27,23 @@ abstract public class AbstractConfiguration implements Configuration {
         );
 
         // get override config from environment variables
-        Map<String, String> overrideConfiguration = new StoreBasedDynamicConfiguration.Builder()
-                .environment("BONG_")
+        StoreBasedDynamicConfiguration.Builder overrideConfigurationBuilder = new StoreBasedDynamicConfiguration.Builder();
+        if (environmentPrefix != null) {
+            overrideConfigurationBuilder.environment(environmentPrefix);
+        }
+
+        overrideConfigurationBuilder
                 .systemProperties()
-                .values(Configuration.convertMapToKeyValuePairs(overrideKeyValuePairs))
-                .build().asMap();
+                .values(Configuration.convertMapToKeyValuePairs(overrideKeyValuePairs));
+
+        Map<String, String> overrideConfiguration = overrideConfigurationBuilder.build().asMap();
 
         // validate required keys: either we got an override or we have a valid fallback key
         LinkedHashSet<String> validateConfiguration = new LinkedHashSet<>(requiredKeys());
         for (String key : requiredKeys()) {
             if (overrideConfiguration.containsKey(key)) {
                 validateConfiguration.remove(key);
-            } else if (defaultConfiguration.containsKey(key.replace(prefix, ""))) {
+            } else if (defaultConfiguration.containsKey(key.replace(namespace, ""))) {
                 validateConfiguration.remove(key);
             }
         }
@@ -47,8 +53,8 @@ abstract public class AbstractConfiguration implements Configuration {
 
         // merge configuration into a map
         overrideConfiguration.forEach((name, value) -> {
-            if (name.startsWith(prefix)) {
-                String realName = name.replace(prefix, "");
+            if (name.startsWith(namespace)) {
+                String realName = name.replace(namespace, "");
                 defaultConfiguration.put(realName, value);
             }
         });
@@ -58,4 +64,6 @@ abstract public class AbstractConfiguration implements Configuration {
                 .values(Configuration.convertMapToKeyValuePairs(defaultConfiguration))
                 .build();
     }
+
+
 }

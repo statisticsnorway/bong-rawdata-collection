@@ -2,8 +2,9 @@ package no.ssb.dc.collection.api.config.internal;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.collection.api.config.BaseConfiguration;
+import no.ssb.dc.collection.api.config.EnvironmentPrefix;
 import no.ssb.dc.collection.api.config.Name;
-import no.ssb.dc.collection.api.config.Prefix;
+import no.ssb.dc.collection.api.config.Namespace;
 import no.ssb.dc.collection.api.config.Property;
 import no.ssb.dc.collection.api.config.RequiredKeys;
 
@@ -50,7 +51,7 @@ public class DynamicInvocationHandler implements InvocationHandler {
         }
 
         Name name = proxyClass.getDeclaredAnnotation(Name.class);
-        if (name == null) {
+        if (name == null || name.value().isBlank()) {
             throw new RuntimeException("Name annotation is not declared on: " + proxyClass);
         }
 
@@ -68,11 +69,11 @@ public class DynamicInvocationHandler implements InvocationHandler {
 
         if (method.getName().startsWith("has")) {
             String value = dynamicConfiguration.evaluateToString(property.value());
-            return Optional.ofNullable(value).isPresent();
+            return Optional.ofNullable(value).filter(f -> !"".equalsIgnoreCase(f)).isPresent();
         }
 
         if (dynamicConfiguration.evaluateToString(property.value()) == null) {
-            throw new IllegalStateException("Property not found: " + property.value());
+            throw new IllegalStateException("Property not found: " + proxyClass.getSimpleName() + ": " + property.value());
         }
 
         Class<?> returnType = method.getReturnType();
@@ -98,10 +99,18 @@ public class DynamicInvocationHandler implements InvocationHandler {
             return configurations.get(name);
         }
 
-        String prefix = configurationClass.getDeclaredAnnotation(Prefix.class).value();
-        Map<String, String> defaultValues = defaultValues(configurationClass);
+        final String environmentPrefix = configurationClass.isAnnotationPresent(EnvironmentPrefix.class) ?
+                configurationClass.getDeclaredAnnotation(EnvironmentPrefix.class).value() :
+                null;
 
-        AbstractConfiguration configuration = new AbstractConfiguration(prefix, defaultValues, overrideValues) {
+        final String namespace = configurationClass.isAnnotationPresent(Namespace.class) ?
+                configurationClass.getDeclaredAnnotation(Namespace.class).value().isBlank() ?
+                        "" :
+                        configurationClass.getDeclaredAnnotation(Namespace.class).value() + "." : "";
+
+        final Map<String, String> defaultValues = defaultValues(configurationClass);
+
+        AbstractConfiguration abstractConfiguration = new AbstractConfiguration(environmentPrefix, namespace, defaultValues, overrideValues) {
             @Override
             public String name() {
                 return name;
@@ -114,13 +123,13 @@ public class DynamicInvocationHandler implements InvocationHandler {
 
             @Override
             public DynamicConfiguration asDynamicConfiguration() {
-                return this.configuration;
+                return configuration;
             }
         };
 
-        configurations.put(name, configuration);
+        configurations.put(name, abstractConfiguration);
 
-        return configuration;
+        return abstractConfiguration;
     }
 
     @SuppressWarnings("rawtypes")

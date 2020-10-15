@@ -5,6 +5,7 @@
 # consumed by the client as a standalone entity.
 #
 # The No-cache backend will process each line in the CSV file and commit them as single messages.
+# The Lmdb and Postgres backend offers pre-processing of source data, so that grouped messages can be produced.
 #
 # Grouping of message data is supported by the Lmdb and Postgres backends. The purpose of a group is to split
 # the csv-files into logical messages, so that data in which belongs to an entity is stored as a grouped message.
@@ -18,9 +19,9 @@ backend: "no-cache"
 # Source data description
 #
 metadata:
-  - source: "SSB internal (SAS)"
-  - dataset: "some-sas-dataset"
-  - tag: "2019-2020"
+  - source: "SERVER:/PATH"
+  - dataset: "dataset"
+  - tag: "year"
   - description: "About the dataset"
 
 #
@@ -28,18 +29,22 @@ metadata:
 #
 fileDescriptor:
   - delimiter: ";"
-  - charset: "ASCII"
+  - charset: "US-ASCII"
   - contentType: "text/csv"
   - files: "generic.csv"
 
 #
-# Each rawdata-message is published on a position. The PositionKeys is determines a unique position on the rawdata-stream
+# Each rawdata-message is published to a position. The PositionKeys is determines a unique position on the rawdata-stream
 # Configure the columns (ordered) that is part of the unique PositionKey. The PositionKey refers to either csv-columns
 # or functions that auto-generates a unique id.
 #
-# Allowed functions: SEQUENCE, ULID, UUID
+# * Column keys composes a KeyValue store Key
+# * Column positionKey composes a rawdata message position key
+# * Column groupBy groups rawdata messages bound a to a position key
+# * Function can be used to generate synthetic ids (SEQUENCE, ULID, UUID)
 #
-
+# Supported data types: String, Long, Integer, Date (requires a formatting mask)
+#
 keys:
   - column: "a"
     type: "String"
@@ -55,23 +60,3 @@ keys:
 
   - function: "d"
     generator: ULID
-
-#positionKeys:
-#  - column: "a"
-#  - function: ULID
-
-#
-# The Lmdb and Postgres backend offers pre-processing of source data, so that grouped messages can be produced.
-#
-# Allowed types: String, Integer, Long and Date
-#
-#groupByKeys:
-#  - column: "a"
-#    type: "String"
-#  - column: "b"
-#    type: "String"
-#  - column: "c"
-#    type: "Date"
-#    format: "MM/dd/yyyy HH:mm:ss"
-#
-

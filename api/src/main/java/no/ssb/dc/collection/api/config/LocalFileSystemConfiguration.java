@@ -1,9 +1,12 @@
 package no.ssb.dc.collection.api.config;
 
+import no.ssb.dc.collection.api.config.internal.MapBuilder;
+
 import java.util.Map;
 
 @Name("target-filesystem")
-@Prefix("target.")
+@Namespace("target")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "target.rawdata.topic",
         "target.local-temp-folder",
@@ -19,13 +22,13 @@ public interface LocalFileSystemConfiguration extends TargetConfiguration {
 
     @Override
     default Map<String, String> defaultValues() {
-        return Map.of(
-                "rawdata.client.provider", "filesystem",
-                "avro-file.max.seconds", "60",
-                "avro-file.max.bytes", Long.toString(64 * 1024 * 1024), // 64 MiB
-                "avro-file.sync.interval", Long.toString(200),
-                "listing.min-interval-seconds", "0"
-        );
+        return MapBuilder.create()
+                .defaults(TargetConfiguration.targetDefaultValues())
+                .values("rawdata.client.provider", "filesystem")
+                .values("listing.min-interval-seconds", "0")
+                .specialized("avro-file.max.seconds", "60")
+                .specialized("avro-file.sync.interval", Long.toString(200))
+                .build();
     }
 
     static LocalFileSystemConfiguration create() {

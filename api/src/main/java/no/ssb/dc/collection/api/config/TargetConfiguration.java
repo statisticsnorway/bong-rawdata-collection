@@ -1,5 +1,7 @@
 package no.ssb.dc.collection.api.config;
 
+import java.util.Map;
+
 public interface TargetConfiguration extends BaseConfiguration {
 
     @Property("rawdata.topic")
@@ -32,5 +34,13 @@ public interface TargetConfiguration extends BaseConfiguration {
     @Property("avro-file.sync.interval")
     Long avroFileSyncInterval();
 
+    @Property("producer.queueBufferSize")
+    Integer queueBufferSize();
 
+    static Map<String, String> targetDefaultValues() {
+        return Map.of(
+                "producer.queueBufferSize", "1000",
+                "avro-file.max.bytes", Long.toString(64 * 1024 * 1024) // Consider a 512 MiB default
+        );
+    }
 }

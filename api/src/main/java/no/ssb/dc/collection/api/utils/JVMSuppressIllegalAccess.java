@@ -3,6 +3,7 @@ package no.ssb.dc.collection.api.utils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 class JVMSuppressIllegalAccess {
 
     // jvm hack to suppress --illegal-access=warn

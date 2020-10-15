@@ -35,7 +35,7 @@ public interface RepositoryKey {
 
     <R extends RepositoryKey> R fromByteBuffer(ByteBuffer keyBuffer);
 
-    ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer);
+    void toByteBuffer(ByteBuffer allocatedBuffer);
 
     String toPosition();
 

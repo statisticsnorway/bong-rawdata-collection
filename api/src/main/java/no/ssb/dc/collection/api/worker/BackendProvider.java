@@ -6,18 +6,18 @@ public enum BackendProvider {
     LMDB("lmdb"),
     POSTGRES("postgres");
 
-    private final String name;
+    public final String provider;
 
-    BackendProvider(String name) {
-        this.name = name;
+    BackendProvider(String provider) {
+        this.provider = provider;
     }
 
-    public static BackendProvider of(String name) {
+    public static BackendProvider of(String provider) {
         for (BackendProvider value : values()) {
-            if (value.name.equalsIgnoreCase(name)) {
+            if (value.provider.equalsIgnoreCase(provider)) {
                 return value;
             }
         }
-        throw new IllegalStateException("Enum value not supported: " + name);
+        throw new IllegalStateException("Enum value not supported: " + provider);
     }
 }

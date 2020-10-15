@@ -1,9 +1,12 @@
 package no.ssb.dc.collection.api.config;
 
+import no.ssb.dc.collection.api.config.internal.MapBuilder;
+
 import java.util.Map;
 
 @Name("target-gcs")
-@Prefix("target.")
+@Namespace("target")
+@EnvironmentPrefix("BONG_")
 @RequiredKeys({
         "target.rawdata.topic",
         "target.gcs.bucket-name",
@@ -26,14 +29,14 @@ public interface GCSConfiguration extends TargetConfiguration {
 
     @Override
     default Map<String, String> defaultValues() {
-        return Map.of(
-                "rawdata.client.provider", "gcs",
-                "gcs.credential-provider", "service-account",
-                "gcs.listing.min-interval-seconds", "30",
-                "avro-file.max.seconds", "86400",
-                "avro-file.max.bytes", Long.toString(64 * 1024 * 1024), // local export should be 512 MiB
-                "avro-file.sync.interval", Long.toString(524288)
-        );
+        return MapBuilder.create()
+                .defaults(TargetConfiguration.targetDefaultValues())
+                .values("rawdata.client.provider", "gcs")
+                .values("gcs.credential-provider", "service-account")
+                .values("gcs.listing.min-interval-seconds", "30")
+                .specialized("avro-file.max.seconds", "86400")
+                .specialized("avro-file.sync.interval", Long.toString(524288))
+                .build();
     }
 
     static GCSConfiguration create() {

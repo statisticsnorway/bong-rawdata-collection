@@ -6,13 +6,12 @@ import no.ssb.dc.collection.api.config.SourceNoDbConfiguration;
 import no.ssb.dc.collection.api.config.SourcePostgresConfiguration;
 import no.ssb.dc.collection.api.config.TargetConfiguration;
 import no.ssb.dc.collection.api.csv.CsvParser;
-import no.ssb.dc.collection.api.source.AbstractCsvRepository;
+import no.ssb.dc.collection.api.source.CsvHandler;
 import no.ssb.dc.collection.api.source.CsvWorker;
-import no.ssb.dc.collection.api.source.LmdbCsvRepository;
-import no.ssb.dc.collection.api.source.PostgresCsvRepository;
-import no.ssb.dc.collection.api.source.SimpleCsvRepository;
+import no.ssb.dc.collection.api.source.LmdbCsvHandler;
+import no.ssb.dc.collection.api.source.PostgresCsvHandler;
+import no.ssb.dc.collection.api.source.SimpleCsvHandler;
 import no.ssb.dc.collection.api.utils.ConversionUtils;
-import no.ssb.dc.collection.api.utils.ULIDGenerator;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -24,36 +23,34 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
     private final SourceConfiguration sourceConfiguration;
     private final TargetConfiguration targetConfiguration;
     private final CsvSpecification specification;
-    private final AbstractCsvRepository<CsvDynamicKey> csvRepository;
+    private final CsvHandler<CsvDynamicKey> csvHandler;
 
     public CsvDynamicWorker(SourceConfiguration sourceConfiguration, TargetConfiguration targetConfiguration, CsvSpecification specification) {
         this.sourceConfiguration = sourceConfiguration;
         this.targetConfiguration = targetConfiguration;
         this.specification = specification;
         if (sourceConfiguration instanceof SourceNoDbConfiguration) {
-            this.csvRepository = createSimpleCsvRepository();
+            this.csvHandler = createSimpleCsvHandler();
         } else if (sourceConfiguration instanceof SourceLmdbConfiguration) {
-            this.csvRepository = createLmdbCsvRepository();
+            this.csvHandler = createLmdbCsvHandlerepository();
         } else if (sourceConfiguration instanceof SourcePostgresConfiguration) {
-            this.csvRepository = createPostgresCsvRepository();
+            this.csvHandler = createPostgresCsvHandler();
         } else {
             throw new IllegalStateException();
         }
     }
 
-    private AbstractCsvRepository<CsvDynamicKey> createSimpleCsvRepository() {
-        return new SimpleCsvRepository<>(
+    private CsvHandler<CsvDynamicKey> createSimpleCsvHandler() {
+        return new SimpleCsvHandler<>(
                 (SourceNoDbConfiguration) sourceConfiguration,
                 targetConfiguration,
                 specification,
-                CsvDynamicKey.class,
-                CsvDynamicKey::isPartOf,
-                this::createDynamicKey
+                this::produceDynamicKey
         );
     }
 
-    private AbstractCsvRepository<CsvDynamicKey> createLmdbCsvRepository() {
-        return new LmdbCsvRepository<>(
+    private CsvHandler<CsvDynamicKey> createLmdbCsvHandlerepository() {
+        return new LmdbCsvHandler<>(
                 (SourceLmdbConfiguration) sourceConfiguration,
                 targetConfiguration,
                 specification,
@@ -62,8 +59,8 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
         );
     }
 
-    private AbstractCsvRepository<CsvDynamicKey> createPostgresCsvRepository() {
-        return new PostgresCsvRepository<>(
+    private CsvHandler<CsvDynamicKey> createPostgresCsvHandler() {
+        return new PostgresCsvHandler<>(
                 (SourcePostgresConfiguration) sourceConfiguration,
                 targetConfiguration,
                 specification,
@@ -74,10 +71,10 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
 
     @Override
     public void prepare() {
-        csvRepository.prepare(this::createDynamicKey);
+        csvHandler.prepare(this::produceDynamicKey);
     }
 
-    CsvDynamicKey createDynamicKey(CsvParser.Record csvRecord) {
+    CsvDynamicKey produceDynamicKey(CsvParser.Record csvRecord) {
         Map<String, Object> values = new LinkedHashMap<>();
 
         specification.columns.keys().forEach((name, columnKey) -> {
@@ -146,13 +143,13 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
 
     @Override
     public void produce() {
-        csvRepository.produce();
+        csvHandler.produce();
     }
 
     @Override
     public void close() {
         try {
-            csvRepository.close();
+            csvHandler.close();
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;

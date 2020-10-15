@@ -26,14 +26,18 @@ public class CsvParser {
 
     private final BufferedReader csvReader;
     private final String filepath;
+    private final List<String> files;
     private final String filename;
     private final char delimiter;
+    private final int dryRun;
 
-    public CsvParser(BufferedReader csvReader, String filepath, String filename, char delimiter) {
+    public CsvParser(BufferedReader csvReader, String filepath, List<String> files, String filename, char delimiter, int dryRun) {
         this.csvReader = csvReader;
         this.filepath = filepath;
+        this.files = files;
         this.filename = filename;
         this.delimiter = delimiter;
+        this.dryRun = dryRun;
     }
 
     public void parse(Consumer<Record> recordVisitor) {
@@ -50,6 +54,8 @@ public class CsvParser {
                     .withTrailingDelimiter(hasTrailingDelimiter)
                     .parse(csvReader)) {
 
+
+                long iterationCount = 0;
                 for (Iterator<CSVRecord> it = parser.iterator(); it.hasNext(); ) {
                     CSVRecord csvRecord = it.next();
                     if (csvRecord.getRecordNumber() == 1) {
@@ -58,8 +64,13 @@ public class CsvParser {
 
                     List<String> tokens = new ArrayList<>();
                     csvRecord.iterator().forEachRemaining(token -> Optional.of(token).map(String::trim).map(tokens::add));
-                    Record record = new Record(filepath, filename, headerMap, tokens, delimiter, it.hasNext());
+                    Record record = new Record(filepath, files, filename, headerMap, tokens, delimiter, it.hasNext());
                     recordVisitor.accept(record);
+
+                    if (dryRun > -1 && iterationCount < (long) dryRun) {
+                        break;
+                    }
+                    iterationCount++;
                 }
             }
         } catch (IOException e) {
@@ -77,7 +88,7 @@ public class CsvParser {
     }
 
     static public String formatToken(String str) {
-        return CaseUtils.toCamelCase(removeChars(str, "\\?"), true, '_', '(', ')'); // avro mappings
+        return CaseUtils.toCamelCase(removeChars(str, "\\?"), true, '\'', '_', '(', ')'); // avro mappings
     }
 
     static public String removeChars(String str, String... chars) {
@@ -93,19 +104,25 @@ public class CsvParser {
 
     public static class Record {
         public final String filepath;
+        public final List<String> files;
         public final String filename;
         public final Map<String, Map.Entry<Integer, String>> headers;
         public final List<String> tokens;
         public final char delimiter;
         public final boolean hasNext;
 
-        public Record(String filepath, String filename, Map<String, Map.Entry<Integer, String>> headers, List<String> tokens, char delimiter, boolean hasNext) {
+        public Record(String filepath, List<String> files, String filename, Map<String, Map.Entry<Integer, String>> headers, List<String> tokens, char delimiter, boolean hasNext) {
             this.filepath = filepath;
+            this.files = files;
             this.filename = filename;
             this.headers = headers;
             this.tokens = tokens;
             this.delimiter = delimiter;
             this.hasNext = hasNext;
+        }
+
+        public String recordType() {
+            return files.size() > 1 ? "collection" : "single";
         }
 
         public String asHeader() {

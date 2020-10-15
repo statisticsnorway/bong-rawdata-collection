@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class ConversionUtils {
+
     public static String toString(String value) {
         return value;
     }
