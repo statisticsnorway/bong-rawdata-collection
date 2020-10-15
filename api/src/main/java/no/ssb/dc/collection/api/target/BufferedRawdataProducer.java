@@ -71,7 +71,7 @@ public class BufferedRawdataProducer implements AutoCloseable {
 
     public enum RecordType {
         SINGLE,
-        COLLECITON
+        COLLECTION
     }
 
     public <K extends RepositoryKey> void readDatabaseAndProduceRawdata(BufferedReadWrite bufferedReadWrite, Class<K> keyClass, BiPredicate<K, K> isPrevKeyPartOfCurrentKey) {
@@ -105,7 +105,7 @@ public class BufferedRawdataProducer implements AutoCloseable {
                     recordSetMap -> produceRawdataMessage(RecordType.SINGLE, filepath, filename, headersMap, delimiterString, recordSetMap));
         } else {
             readBufferedRecordThenGroupAndProduceRawdataMessage(bufferedReadWrite, keyClass, isPrevKeyPartOfCurrentKey,
-                    recordSetMap -> produceRawdataMessage(RecordType.COLLECITON, filepath, filename, headersMap, delimiterString, recordSetMap));
+                    recordSetMap -> produceRawdataMessage(RecordType.COLLECTION, filepath, filename, headersMap, delimiterString, recordSetMap));
         }
     }
 
