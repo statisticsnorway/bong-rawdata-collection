@@ -69,6 +69,11 @@ public class BufferedRawdataProducer implements AutoCloseable {
         this.encodingBuffer = ByteBuffer.allocateDirect(sourceConfiguration.queueValueBufferSize());
     }
 
+    public enum RecordType {
+        SINGLE,
+        COLLECITON
+    }
+
     public <K extends RepositoryKey> void readDatabaseAndProduceRawdata(BufferedReadWrite bufferedReadWrite, Class<K> keyClass, BiPredicate<K, K> isPrevKeyPartOfCurrentKey) {
         Objects.requireNonNull(specification);
         Map<String, String> metadataMap = new LinkedHashMap<>();
@@ -97,10 +102,10 @@ public class BufferedRawdataProducer implements AutoCloseable {
 
         if (specification.columns.groupByKeys().isEmpty()) {
             readBufferedRecordAndProduceRawdataMessage(bufferedReadWrite, keyClass,
-                    recordSetMap -> produceRawdataMessage(filepath, filename, headersMap, delimiterString, recordSetMap));
+                    recordSetMap -> produceRawdataMessage(RecordType.SINGLE, filepath, filename, headersMap, delimiterString, recordSetMap));
         } else {
             readBufferedRecordThenGroupAndProduceRawdataMessage(bufferedReadWrite, keyClass, isPrevKeyPartOfCurrentKey,
-                    recordSetMap -> produceRawdataMessage(filepath, filename, headersMap, delimiterString, recordSetMap));
+                    recordSetMap -> produceRawdataMessage(RecordType.COLLECITON, filepath, filename, headersMap, delimiterString, recordSetMap));
         }
     }
 
@@ -192,7 +197,8 @@ public class BufferedRawdataProducer implements AutoCloseable {
     }
 
 
-    public <K extends RepositoryKey> void produceRawdataMessage(String filepath,
+    public <K extends RepositoryKey> void produceRawdataMessage(RecordType recordType,
+                                                                String filepath,
                                                                 String filename,
                                                                 Map<String, Map.Entry<Integer, String>> headersMap,
                                                                 String delimiterString, Map<K, String> recordSetMap) {
@@ -204,7 +210,6 @@ public class BufferedRawdataProducer implements AutoCloseable {
         AtomicReference<String> positionRef = new AtomicReference<>();
 
         // read record
-        String recordType = recordSetMap.size() == 1 ? "single" : "collection";
         for (Map.Entry<K, String> entry : recordSetMap.entrySet()) {
             // use first record to get position and header mapping
             if (positionRef.get() == null) {
@@ -236,7 +241,7 @@ public class BufferedRawdataProducer implements AutoCloseable {
                 .sourceFile(filename)
                 .sourceCharset(specification.fileDescriptor.charset.displayName())
                 .delimiter(delimiterString)
-                .recordType(recordType);
+                .recordType(recordType.name().toLowerCase());
 
         for (Map.Entry<String, Map.Entry<Integer, String>> entry : headersMap.entrySet()) {
             metadataContent.csvMapping(entry.getKey(), entry.getValue().getValue());
