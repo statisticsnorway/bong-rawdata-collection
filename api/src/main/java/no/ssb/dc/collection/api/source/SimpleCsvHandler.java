@@ -65,7 +65,7 @@ public class SimpleCsvHandler<T extends RepositoryKey> implements CsvHandler<T> 
 
                         Map<T, String> recordSetMap = new LinkedHashMap<>();
                         recordSetMap.put(repositoryKey, record.asLine());
-                        bufferedRawdataProducer.produceRawdataMessage(record.recordType(), record.filepath, record.filename, record.headers, Character.toString(record.delimiter), recordSetMap);
+                        bufferedRawdataProducer.produceRawdataMessage(record.filepath, record.filename, record.headers, Character.toString(record.delimiter), recordSetMap);
                         handledRecords.incrementAndGet();
 
                         if (BufferedRawdataProducer.recordCount.incrementAndGet() % 10000 == 0) {

@@ -86,7 +86,6 @@ public class CsvReader {
             if (isHeaderRecord.get()) {
                 bufferedReadWrite.writeHeader("filepath", record.filepath);
                 bufferedReadWrite.writeHeader("filename", record.filename);
-                bufferedReadWrite.writeHeader("recordType", record.recordType());
                 bufferedReadWrite.writeHeader("csvHeader", EncodingUtils.encodeArray(new ArrayList<>(record.headers.keySet()), encodingBuffer));
                 String delimiterString = Character.toString(record.delimiter);
                 bufferedReadWrite.writeHeader("delimiter", delimiterString);

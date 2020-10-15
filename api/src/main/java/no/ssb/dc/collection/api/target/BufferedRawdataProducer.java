@@ -76,7 +76,6 @@ public class BufferedRawdataProducer implements AutoCloseable {
             metadataMap.put(entry.getKey(), entry.getValue());
         });
 
-        String recordType = metadataMap.get("recordType");
         String filepath = metadataMap.get("filepath");
         String filename = metadataMap.get("filename");
         List<String> csvHeaders = EncodingUtils.decodeArray(metadataMap.get("csvHeader"), encodingBuffer);
@@ -98,10 +97,10 @@ public class BufferedRawdataProducer implements AutoCloseable {
 
         if (specification.columns.groupByKeys().isEmpty()) {
             readBufferedRecordAndProduceRawdataMessage(bufferedReadWrite, keyClass,
-                    recordSetMap -> produceRawdataMessage(recordType, filepath, filename, headersMap, delimiterString, recordSetMap));
+                    recordSetMap -> produceRawdataMessage(filepath, filename, headersMap, delimiterString, recordSetMap));
         } else {
             readBufferedRecordThenGroupAndProduceRawdataMessage(bufferedReadWrite, keyClass, isPrevKeyPartOfCurrentKey,
-                    recordSetMap -> produceRawdataMessage(recordType, filepath, filename, headersMap, delimiterString, recordSetMap));
+                    recordSetMap -> produceRawdataMessage(filepath, filename, headersMap, delimiterString, recordSetMap));
         }
     }
 
@@ -193,8 +192,7 @@ public class BufferedRawdataProducer implements AutoCloseable {
     }
 
 
-    public <K extends RepositoryKey> void produceRawdataMessage(String recordType,
-                                                                String filepath,
+    public <K extends RepositoryKey> void produceRawdataMessage(String filepath,
                                                                 String filename,
                                                                 Map<String, Map.Entry<Integer, String>> headersMap,
                                                                 String delimiterString, Map<K, String> recordSetMap) {
@@ -206,6 +204,7 @@ public class BufferedRawdataProducer implements AutoCloseable {
         AtomicReference<String> positionRef = new AtomicReference<>();
 
         // read record
+        String recordType = recordSetMap.size() == 1 ? "single" : "collection";
         for (Map.Entry<K, String> entry : recordSetMap.entrySet()) {
             // use first record to get position and header mapping
             if (positionRef.get() == null) {

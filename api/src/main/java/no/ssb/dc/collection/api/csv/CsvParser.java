@@ -121,10 +121,6 @@ public class CsvParser {
             this.hasNext = hasNext;
         }
 
-        public String recordType() {
-            return files.size() > 1 ? "collection" : "single";
-        }
-
         public String asHeader() {
             return headers.values().stream().map(Map.Entry::getValue).collect(Collectors.joining(Character.toString(delimiter)));
         }
