@@ -13,7 +13,8 @@
 # Please note: Lmdb should only be used for CSV files that contains less 25 million records. If you surpass that
 # threshold you should use Postgres.
 #
-backend: "no-cache"
+#backend: "no-cache"
+backend: "lmdb"
 
 #
 # Source data description
@@ -47,7 +48,7 @@ fileDescriptor:
 #
 keys:
   - column: "a"
-    type: "String"
+    type: "Long"
     position: true
     groupBy: true
 

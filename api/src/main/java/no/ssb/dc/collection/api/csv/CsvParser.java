@@ -10,13 +10,13 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -63,8 +63,20 @@ public class CsvParser {
                     }
 
                     List<String> tokens = new ArrayList<>();
-                    csvRecord.iterator().forEachRemaining(token -> Optional.of(token).map(String::trim).map(tokens::add));
+                    csvRecord.iterator().forEachRemaining(token -> {
+                        if (token == null) {
+                            tokens.add(token);
+                        } else {
+                            tokens.add(token.trim());
+                        }
+                    });
+
                     Record record = new Record(filepath, files, filename, headerMap, tokens, delimiter, it.hasNext());
+
+                    if (record.isEmpty()) {
+                        continue;
+                    }
+
                     recordVisitor.accept(record);
 
                     if (dryRun > -1 && iterationCount < (long) dryRun) {
@@ -73,7 +85,8 @@ public class CsvParser {
                     iterationCount++;
                 }
             }
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -119,6 +132,14 @@ public class CsvParser {
             this.tokens = tokens;
             this.delimiter = delimiter;
             this.hasNext = hasNext;
+        }
+
+        public boolean isEmpty() {
+            return Arrays.stream(tokens.toArray(new String[0])).allMatch(Record::isEmpty);
+        }
+
+        static boolean isEmpty(String token) {
+            return token == null || "".equals(token);
         }
 
         public String asHeader() {
