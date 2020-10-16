@@ -32,7 +32,7 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
         if (sourceConfiguration instanceof SourceNoDbConfiguration) {
             this.csvHandler = createSimpleCsvHandler();
         } else if (sourceConfiguration instanceof SourceLmdbConfiguration) {
-            this.csvHandler = createLmdbCsvHandlerepository();
+            this.csvHandler = createLmdbCsvHandler();
         } else if (sourceConfiguration instanceof SourcePostgresConfiguration) {
             this.csvHandler = createPostgresCsvHandler();
         } else {
@@ -49,7 +49,7 @@ public class CsvDynamicWorker implements CsvWorker<CsvDynamicKey> {
         );
     }
 
-    private CsvHandler<CsvDynamicKey> createLmdbCsvHandlerepository() {
+    private CsvHandler<CsvDynamicKey> createLmdbCsvHandler() {
         return new LmdbCsvHandler<>(
                 (SourceLmdbConfiguration) sourceConfiguration,
                 targetConfiguration,
