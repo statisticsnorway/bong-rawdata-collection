@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -139,8 +140,8 @@ public class Application implements Runnable {
     }
 
     boolean isTarget(String target) {
-        return (specification != null && specification.backend != null &&
-                target.endsWith(specification.backend.provider)) || (configuration.hasTarget() && configuration.target().equals(target));
+        return (specification != null && specification.backend != null && target.equals("dynamic-".concat(specification.backend.provider)))
+                || (configuration.hasTarget() && configuration.target().equals(target));
     }
 
     void printCommands() {
@@ -162,10 +163,13 @@ public class Application implements Runnable {
                 null;
 
         for (Command command : commands) {
-            String target = overrideTarget != null ? overrideTarget : command.target;
+            String target = overrideTarget == null ?
+                    command.target :
+                    (overrideTarget.equals(command.target) ? overrideTarget : command.target);
+
             if ((isAction(command.action) && target == null) || (isAction(command.action) && isTarget(target))) {
                 valid = true;
-                LOG.info("Execute action: {} and target: {}", command.action, target);
+                LOG.info("Execute action: {} and target: {} with callback: {}", command.action, target, command.callback);
                 command.callback.execute();
                 completed.set(true);
                 break;
@@ -199,6 +203,20 @@ public class Application implements Runnable {
             this.action = action;
             this.target = target;
             this.callback = callback;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Command command = (Command) o;
+            return action.equals(command.action) &&
+                    Objects.equals(target, command.target);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(action, target);
         }
     }
 
