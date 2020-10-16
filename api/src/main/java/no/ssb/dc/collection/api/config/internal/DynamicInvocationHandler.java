@@ -46,6 +46,21 @@ public class DynamicInvocationHandler implements InvocationHandler {
             return defaultMethod.invoke(nonProxyObject, args);
         }
 
+        if ("toString".equals(method.getName())) {
+            return proxyClass.toString();
+        }
+
+        if ("hashCode".equals(method.getName())) {
+            return proxyClass.hashCode();
+        }
+
+        if ("equals".equals(method.getName())) {
+            if (args != null && args.length == 1) {
+                return proxyClass.getName().equals(args[0].getClass().getInterfaces()[0].getName());
+            }
+            return false;
+        }
+
         if (args != null) {
             throw new RuntimeException("Method with arguments is not supported: " + method);
         }
