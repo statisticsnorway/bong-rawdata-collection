@@ -28,7 +28,7 @@ public class IntegrationTest {
     @Test
     void application() throws Exception {
         Path currentPath = Paths.get(".").normalize().toAbsolutePath();
-        Path resourcePath = Paths.get(".").normalize().toAbsolutePath().getParent().resolve(Paths.get("api/src/test/resources/no/ssb/dc/collection/api/worker"));
+        Path resourcePath = currentPath.getParent().resolve(Paths.get("api/src/test/resources/no/ssb/dc/collection/api/worker"));
         getModifiableEnvironment().put("BONG_action", "generate");
         getModifiableEnvironment().put("BONG_target", "dynamic-lmdb");
         getModifiableEnvironment().put("BONG_source.specification.filepath", resourcePath.toString());
