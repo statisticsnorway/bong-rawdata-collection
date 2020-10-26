@@ -38,7 +38,7 @@ public class CsvDynamicTest {
                     .delimiter(';')
                     .charset(StandardCharsets.US_ASCII)
                     .contentType("text/csv")
-                    .files("generic.csv")
+                    .files("example-1.csv")
             )
             .columnKeys(column()
                     .name("a")
@@ -63,6 +63,7 @@ public class CsvDynamicTest {
                     .position()
             )
             .build();
+    public static final String SPEC_AND_DATA_RESOURCES = "src/test/resources/no/ssb/dc/collection/api/worker";
 
     static LocalFileSystemConfiguration targetConfiguration;
 
@@ -76,33 +77,34 @@ public class CsvDynamicTest {
     }
 
     private static SourceNoDbConfiguration createSourceNoDbConfiguration(String sourceCsvFilename) {
-        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get("target/test-classes/no/ssb/dc/collection/api/worker"));
+        Path currentPath = Paths.get(".").toAbsolutePath().normalize();
+        Path targetPath = currentPath.resolve(Paths.get(SPEC_AND_DATA_RESOURCES));
         assertTrue(Files.isDirectory(targetPath));
         return SourceNoDbConfiguration.create(Map.of(
                 "source.rawdata.topic", "dummy-source-test",
-                "source.csv.filepath", targetPath.toString(),
+                "source.csv.filepath", targetPath.resolve(Paths.get("files/example/dummy/2020")).toString(),
                 "source.csv.files", sourceCsvFilename
         ));
     }
 
     private static SourceLmdbConfiguration createSourceLmdbConfiguration(String sourceCsvFilename) {
-        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get("target/test-classes/no/ssb/dc/collection/api/worker"));
+        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get(SPEC_AND_DATA_RESOURCES));
         assertTrue(Files.isDirectory(targetPath));
         return SourceLmdbConfiguration.create(Map.of(
                 "source.lmdb.path", Paths.get(".").toAbsolutePath().normalize().resolve("target").resolve("lmdb").toString(),
                 "source.rawdata.topic", "dummy-source-test",
-                "source.csv.filepath", targetPath.toString(),
+                "source.csv.filepath", targetPath.resolve(Paths.get("files/example/dummy/2020")).toString(),
                 "source.csv.files", sourceCsvFilename
         ));
     }
 
     private static SourcePostgresConfiguration createSourcePostgresConfiguration(String sourceCsvFilename) {
-        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get("target/test-classes/no/ssb/dc/collection/api/worker"));
+        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get(SPEC_AND_DATA_RESOURCES));
         assertTrue(Files.isDirectory(targetPath));
         return SourcePostgresConfiguration.create(
                 Map.of(
                         "source.rawdata.topic", "dummy-source-test",
-                        "source.csv.filepath", targetPath.toString(),
+                        "source.csv.filepath", targetPath.resolve(Paths.get("files/example/dummy/2020")).toString(),
                         "source.csv.files", sourceCsvFilename
                 )
         );
@@ -119,9 +121,11 @@ public class CsvDynamicTest {
     @Test
     public void deserializeSpec() throws IOException {
         SpecificationDeserializer deserializer = new SpecificationDeserializer();
-        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get("target/test-classes/no/ssb/dc/collection/api/worker"));
+        Path currentPath = Paths.get(".").toAbsolutePath().normalize();
+        LOG.trace("CurrentPath: {}", currentPath);
+        Path targetPath = currentPath.resolve(Paths.get(SPEC_AND_DATA_RESOURCES));
         assertTrue(Files.isDirectory(targetPath));
-        CsvSpecification specification = deserializer.parse(Files.readString(targetPath.resolve("generic-spec.yaml"), StandardCharsets.UTF_8));
+        CsvSpecification specification = deserializer.parse(Files.readString(targetPath.resolve(Paths.get("spec/example/dummy/2020/example-spec.yaml")), StandardCharsets.UTF_8));
         deserializer.validate(specification);
         LOG.trace("spec: {}", specification);
     }
@@ -145,7 +149,7 @@ public class CsvDynamicTest {
     @Disabled
     @Test
     void simpleWorker() {
-        try (CsvDynamicWorker worker = new CsvDynamicWorker(createSourceNoDbConfiguration("generic.csv"), targetConfiguration, specification)) {
+        try (CsvDynamicWorker worker = new CsvDynamicWorker(createSourceNoDbConfiguration("example-1.csv"), targetConfiguration, specification)) {
             worker.produce();
         }
     }
@@ -153,7 +157,7 @@ public class CsvDynamicTest {
     @Disabled
     @Test
     public void lmdbWorker() {
-        try (CsvDynamicWorker worker = new CsvDynamicWorker(createSourceLmdbConfiguration("generic.csv"), targetConfiguration, specification)) {
+        try (CsvDynamicWorker worker = new CsvDynamicWorker(createSourceLmdbConfiguration("example-1.csv"), targetConfiguration, specification)) {
             worker.prepare();
             worker.produce();
         }
@@ -162,7 +166,7 @@ public class CsvDynamicTest {
     @Disabled
     @Test
     public void postgresWorker() {
-        try (CsvDynamicWorker worker = new CsvDynamicWorker(createSourcePostgresConfiguration("generic.csv"), targetConfiguration, specification)) {
+        try (CsvDynamicWorker worker = new CsvDynamicWorker(createSourcePostgresConfiguration("example-1.csv"), targetConfiguration, specification)) {
             worker.prepare();
             worker.produce();
         }

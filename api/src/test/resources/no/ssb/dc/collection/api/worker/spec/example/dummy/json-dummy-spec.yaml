@@ -1,0 +1,30 @@
+backend: "no-cache"
+
+#
+# Source data description
+#
+metadata:
+  - source: "https://data.brreg.no/enhetsregisteret/oppslag/enheter"
+  - dataset: "brreg"
+  - tag: "2020"
+  - description: "About the dataset"
+
+#
+# Describe files to be processed. Use (,) comma to separate multiple files.
+#
+fileDescriptor:
+  - charset: "UTF-8"
+  - contentType: "application/json"
+  - files: "json-test-1.csv"
+
+keys:
+  # array or query
+  - sequence: "array"
+    split: "jq-query" # optional
+    expected: ".organisasjonsnummer"
+    postion: true
+
+  - function: "entryId"
+    generator: SEQUENCE
+    postion: true
+
