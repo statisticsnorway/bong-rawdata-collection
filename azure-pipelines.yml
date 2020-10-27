@@ -47,7 +47,7 @@ variables:
   - name: mavenContainer
     value: 'maven:3.6.3-openjdk-15'
   - name: checkStyleRunAnalysis
-    value: 'true'
+    value: 'false'
   - name:  MAVEN_CACHE_FOLDER
     value: $(Pipeline.Workspace)/.m2/repository
   - name: MAVEN_OPTS
