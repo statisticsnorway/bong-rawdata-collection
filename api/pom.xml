@@ -260,7 +260,12 @@
                         <configuration>
                             <argLine>
                                 ${argLine}
+                                --enable-preview
                                 --illegal-access=deny
+                                --add-opens=java.base/java.lang.invoke=rawdata.collection.api
+                                --add-opens=java.base/java.nio=lmdbjava
+                                --add-exports=java.base/sun.nio.ch=lmdbjava
+                                --add-opens=rawdata.collection.api/no.ssb.dc.collection.api.source=ALL-UNNAMED
                                 -Xmx1500m
                             </argLine>
                         </configuration>
