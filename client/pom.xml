@@ -102,7 +102,6 @@
     </dependencies>
 
     <profiles>
-
         <profile>
             <id>ssb-bip</id>
             <repositories>
