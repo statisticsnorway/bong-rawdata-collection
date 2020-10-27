@@ -1,0 +1,54 @@
+name: $(Build.SourceBranch)-$(date:yyyyMMdd)$(rev:.r)
+
+# Pipeline triggers on any branch and tag
+trigger:
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
+  paths:
+    include:
+      - 'client/*'
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: statisticsnorway/azure-pipelines-templates
+      ref: refs/tags/1.1.6
+      endpoint: statisticsnorway (6)
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+
+  # Variables defined in Pipelines->Library->Variable Groups in your project in
+  # Azure Pipelines
+  - group: Hemmeligheter
+
+  # Variables defined here
+  - name: fullSha
+    value: '$(Build.SourceVersion)'
+  - name: project
+    value: 'dapla'
+  - name: imageHost
+    value: 'https://eu.gcr.io/'
+  - name: imageName
+    value: 'eu.gcr.io/prod-bip/ssb/dapla/rawdata/rawdata-collection-client'
+  - name: repoName
+    value: 'prod-bip/ssb/dapla/rawdata/rawdata-collection-client'
+  - name: artifactName
+    value: 'rawdata-collection-client'
+  - name: mavenContainer
+    value: 'maven:3.6.3-openjdk-15'
+  - name: checkStyleRunAnalysis
+    value: 'true'
+  - name:  MAVEN_CACHE_FOLDER
+    value: $(Pipeline.Workspace)/.m2/repository
+  - name: MAVEN_OPTS
+    value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
+jobs:

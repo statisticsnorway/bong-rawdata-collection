@@ -1,0 +1,53 @@
+name: $(Build.SourceBranch)-$(date:yyyyMMdd)$(rev:.r)
+
+# Pipeline triggers on any branch and tag
+trigger:
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
+  paths:
+    include:
+      - 'bong/*'
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: statisticsnorway/azure-pipelines-templates
+      ref: refs/tags/1.1.6
+      endpoint: statisticsnorway (6)
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+
+  # Variables defined in Pipelines->Library->Variable Groups in your project in
+  # Azure Pipelines
+  - group: Hemmeligheter
+
+  # Variables defined here
+  - name: mavenContainer
+    value: 'maven:3.6.3-openjdk-15'
+  - name: checkStyleRunAnalysis
+    value: 'true'
+  - name:  MAVEN_CACHE_FOLDER
+    value: $(Pipeline.Workspace)/.m2/repository
+  - name: MAVEN_OPTS
+    value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
+jobs:
+  jobs:
+    - job: buildTest
+      displayName: 'compile deploy app'
+      container: ${{ variables.mavenContainer }}
+
+      # Job condition: Run these jobs on any branch, but not on tags
+      condition: not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+
+      # Complete maven build and upload to nexus
+      steps:
+        - template: maven/task-maven-complete.yml@templates

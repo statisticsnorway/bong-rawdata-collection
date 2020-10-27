@@ -1,19 +1,103 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+name: $(Build.SourceBranch)-$(date:yyyyMMdd)$(rev:.r)
 
+  # Pipeline triggers on any branch and tag
 trigger:
-- master
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
+  paths:
+    exclude:
+      - 'api/*'
+      - 'bong/*'
+      - 'client/*'
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: statisticsnorway/azure-pipelines-templates
+      ref: refs/tags/1.1.6
+      endpoint: statisticsnorway (6)
 
 pool:
   vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  # Variables defined in Pipelines->Library->Variable Groups in your project in
+  # Azure Pipelines
+  - group: Hemmeligheter
+
+  # Variables defined here
+  - name: fullSha
+    value: '$(Build.SourceVersion)'
+  - name: project
+    value: 'dapla'
+  - name: imageHost
+    value: 'https://eu.gcr.io/'
+  - name: imageName
+    value: 'eu.gcr.io/prod-bip/ssb/dapla/rawdata/rawdata-collection-project'
+  - name: repoName
+    value: 'prod-bip/ssb/dapla/rawdata/rawdata-collection-project'
+  - name: artifactName
+    value: 'rawdata-collection-project'
+  - name: mavenContainer
+    value: 'maven:3.6.3-openjdk-15'
+  - name: checkStyleRunAnalysis
+    value: 'true'
+  - name:  MAVEN_CACHE_FOLDER
+    value: $(Pipeline.Workspace)/.m2/repository
+  - name: MAVEN_OPTS
+    value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
+jobs:
+  - job: mavenBuildTestPublish
+    displayName: 'Compile and deploy app'
+    container: ${{ variables.mavenContainer }}
+
+    # Job condition: Run these jobs on any branch, but not on tags
+    condition:  not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+
+    # Steps in this job
+    steps:
+
+      # Authenticate Maven to Nexus using predefined Service Connections
+      # (Project Settings->Pipelines->Service Connections)
+      - template: maven/task-authenticate.yml@templates
+        parameters:
+          connections: ${{ variables.connections }}
+
+      - template: maven/task-cache.yml@templates
+
+      - template: maven/task-test-and-verify.yml@templates
+        parameters:
+          checkStyleRunAnalysis: ${{ variables.checkStyleRunAnalysis }}
+
+      - template: maven/task-sonar-analyze.yml@templates
+
+      - task: Maven@3
+        displayName: 'Maven install and deploy'
+        inputs:
+          mavenPomFile: 'pom.xml'
+          mavenOptions: '-Xmx3072m'
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: false
+          testResultsFiles: '**/TEST-*.xml'
+          goals: 'deploy'
+          options: 'clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+
+      # Publish pipeline artifact
+      - publish: target
+        displayName: 'Publish artifact to pipeline'
+        artifact: ${{ variables.artifactName }}
+
+   #dockerfile 1
+      #flytte filer
+        #3 submoduler
+        #1 el 3artifacts?
+      #vulner check
+   #dockerfile 2
+     #vulner check
