@@ -62,8 +62,6 @@ jobs:
       # Authenticate Maven to Nexus using predefined Service Connections
       # (Project Settings->Pipelines->Service Connections)
       - template: maven/task-authenticate.yml@templates
-        parameters:
-          connections: ${{ variables.connections }}
 
       - template: maven/task-cache.yml@templates
 
