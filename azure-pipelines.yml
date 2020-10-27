@@ -8,11 +8,6 @@ trigger:
   tags:
     include:
       - '*'
-  paths:
-    exclude:
-      - 'api/*'
-      - 'bong/*'
-      - 'client/*'
 
 resources:
   repositories:
