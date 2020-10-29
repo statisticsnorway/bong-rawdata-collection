@@ -103,27 +103,25 @@ jobs:
         artifact: ${{ variables.artifactNameClient }}
 
       # Copy pipeline artifact into working directory
-      step:
-        - task: CopyFiles@2
+      - task: CopyFiles@2
+        inputs:
+          contents: $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar
+          targetFolder: './target'
+      - task: CopyFiles@2
           inputs:
-            contents: $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar
-            targetFolder: './target'
-        - task: CopyFiles@2
-            inputs:
-              contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/libs/*
-              targetFolder: './target/libs'
-        - task: CopyFiles@2
-            inputs:
-              contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.xml
-              targetFolder: './target/classes'
-        - task: CopyFiles@2
-            inputs:
-              contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.yaml
-              targetFolder: './target/classes'
+            contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/libs/*
+            targetFolder: './target/libs'
+      - task: CopyFiles@2
+          inputs:
+            contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.xml
+            targetFolder: './target/classes'
+      - task: CopyFiles@2
+          inputs:
+            contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.yaml
+            targetFolder: './target/classes'
 
-      step:
-        - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
-            parameters:
-              imageName: ${{ parameters.imageNameClient }}
-              repoName: ${{ parameters.repoNameClient }}
+      - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
+          parameters:
+            imageName: ${{ parameters.imageNameClient }}
+            repoName: ${{ parameters.repoNameClient }}
   #- job: buildClientProxyDockerFile
