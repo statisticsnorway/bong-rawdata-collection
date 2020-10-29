@@ -8,11 +8,11 @@ trigger:
   tags:
     include:
       - '*'
-  paths:
-    exclude:
-      - 'api/*'
-      - 'bong/*'
-      - 'client/*'
+#  paths:
+#    exclude:
+#      - 'api/*'
+#      - 'bong/*'
+#      - 'client/*'
 
 resources:
   repositories:
@@ -85,7 +85,15 @@ jobs:
           publishJUnitResults: false
           testResultsFiles: '**/TEST-*.xml'
           goals: 'deploy'
-          options: '--non-recursive clean verify -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+          options: '--non-recursive clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+
+#      # Copy files
+#      step:
+#        - task: CopyFiles@2
+#              inputs:
+#                contents: 'pom.xml'
+#                targetFolder: 'target/'
+#                cleanTargetFolder: true
 
       # Publish pipeline artifact
       - publish: target
