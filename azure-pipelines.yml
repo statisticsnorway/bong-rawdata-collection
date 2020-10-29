@@ -110,20 +110,20 @@ jobs:
         targetFolder: './target'
     - task: CopyFiles@2
       inputs:
-        contents: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/libs/*'
+        contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/*'
         targetFolder: './target/libs'
     - task: CopyFiles@2
       inputs:
-        contents: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.xml'
+        contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml'
         targetFolder: './target/classes'
     - task: CopyFiles@2
       inputs:
-        contents: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.yaml'
+        contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml'
         targetFolder: './target/classes'
 
     - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
       parameters:
-        project: ${{ dapla }}
-        imageName: ${{ parameters.imageNameClient }}
-        repoName: ${{ parameters.repoNameClient }}
+        project: ${{ project }}
+        imageName: ${{ variables.imageNameClient }}
+        repoName: ${{ variables.repoNameClient }}
   #- job: buildClientProxyDockerFile
