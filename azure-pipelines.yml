@@ -8,11 +8,6 @@ trigger:
   tags:
     include:
       - '*'
-#  paths:
-#    exclude:
-#      - 'api/*'
-#      - 'bong/*'
-#      - 'client/*'
 
 resources:
   repositories:
@@ -36,14 +31,18 @@ variables:
     value: '$(Build.SourceVersion)'
   - name: project
     value: 'dapla'
-  - name: imageHost
-    value: 'https://eu.gcr.io/'
-  - name: imageName
-    value: 'eu.gcr.io/prod-bip/ssb/dapla/rawdata/rawdata-collection-project'
-  - name: repoName
-    value: 'prod-bip/ssb/dapla/rawdata/rawdata-collection-project'
+  - name: imageNameClient
+    value: 'eu.gcr.io/prod-bip/ssb/dapla/rawdata/rawdata-collection-client'
+  - name: imageNameClientProxy
+    value: 'eu.gcr.io/prod-bip/ssb/dapla/rawdata/rawdata-collection-client-proxy'
+  - name: repoNameClient
+    value: 'prod-bip/ssb/dapla/rawdata/rawdata-collection-client'
+  - name: repoNameClientProxy
+    value: 'prod-bip/ssb/dapla/rawdata/rawdata-collection-client-proxy'
   - name: artifactName
     value: 'rawdata-collection-project'
+  - name: artifactNameClient
+    value: 'rawdata-collection-client'
   - name: mavenContainer
     value: 'maven:3.6.3-openjdk-15'
   - name: checkStyleRunAnalysis
@@ -54,7 +53,7 @@ variables:
     value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
 jobs:
-  - job: mavenBuildTestPublish
+  - job: buildTestPublishToPipeline
     displayName: 'Compile and deploy app'
     container: ${{ variables.mavenContainer }}
 
@@ -85,7 +84,6 @@ jobs:
           publishJUnitResults: false
           testResultsFiles: '**/TEST-*.xml'
           goals: 'deploy'
-          #options: '--non-recursive clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
           options: 'clean verify -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
 
       - bash: |
@@ -95,3 +93,37 @@ jobs:
       - publish: target
         displayName: 'Publish artifact to pipeline'
         artifact: ${{ variables.artifactName }}
+
+  - job: buildClientModuleDockerFile
+    dependsOn: buildTestPublishToPipeline
+    steps:
+      # Download pipeline artifact
+      - download: current
+        displayName: 'Download pipeline artifact'
+        artifact: ${{ variables.artifactNameClient }}
+
+      # Copy pipeline artifact into working directory
+      step:
+        - task: CopyFiles@2
+          inputs:
+            contents: $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar
+            targetFolder: './target'
+        - task: CopyFiles@2
+            inputs:
+              contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/libs/*
+              targetFolder: './target/libs'
+        - task: CopyFiles@2
+            inputs:
+              contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.xml
+              targetFolder: './target/classes'
+        - task: CopyFiles@2
+            inputs:
+              contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.yaml
+              targetFolder: './target/classes'
+
+      step:
+        - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
+            parameters:
+              imageName: ${{ parameters.imageNameClient }}
+              repoName: ${{ parameters.repoNameClient }}
+  #- job: buildClientProxyDockerFile
