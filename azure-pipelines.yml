@@ -97,31 +97,33 @@ jobs:
   - job: buildClientModuleDockerFile
     dependsOn: buildTestPublishToPipeline
     steps:
-      # Download pipeline artifact
-      - download: current
-        displayName: 'Download pipeline artifact'
-        artifact: ${{ variables.artifactNameClient }}
 
-      # Copy pipeline artifact into working directory
-      - task: CopyFiles@2
-        inputs:
-          contents: $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar
-          targetFolder: './target'
-      - task: CopyFiles@2
-          inputs:
-            contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/libs/*
-            targetFolder: './target/libs'
-      - task: CopyFiles@2
-          inputs:
-            contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.xml
-            targetFolder: './target/classes'
-      - task: CopyFiles@2
-          inputs:
-            contents: $(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.yaml
-            targetFolder: './target/classes'
+    # Download pipeline artifact
+    - download: current
+      displayName: 'Download pipeline artifact'
+      artifact: ${{ variables.artifactNameClient }}
 
-      - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
-          parameters:
-            imageName: ${{ parameters.imageNameClient }}
-            repoName: ${{ parameters.repoNameClient }}
+    # Copy pipeline artifact into working directory
+    - task: CopyFiles@2
+      inputs:
+        contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar'
+        targetFolder: './target'
+    - task: CopyFiles@2
+      inputs:
+        contents: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/libs/*'
+        targetFolder: './target/libs'
+    - task: CopyFiles@2
+      inputs:
+        contents: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.xml'
+        targetFolder: './target/classes'
+    - task: CopyFiles@2
+      inputs:
+        contents: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/classes/*.yaml'
+        targetFolder: './target/classes'
+
+    - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
+      parameters:
+        project: ${{ dapla }}
+        imageName: ${{ parameters.imageNameClient }}
+        repoName: ${{ parameters.repoNameClient }}
   #- job: buildClientProxyDockerFile
