@@ -123,7 +123,6 @@ jobs:
 
     - template: ${{variables['System.DefaultWorkingDirectory']}}/docker/docker-build-image-and-push-to-gcr.yml
       parameters:
-        project: ${{ project }}
         imageName: ${{ variables.imageNameClient }}
         repoName: ${{ variables.repoNameClient }}
   #- job: buildClientProxyDockerFile
