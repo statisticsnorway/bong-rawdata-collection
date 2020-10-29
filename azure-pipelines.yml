@@ -8,6 +8,11 @@ trigger:
   tags:
     include:
       - '*'
+  paths:
+    exclude:
+      - 'api/*'
+      - 'bong/*'
+      - 'client/*'
 
 resources:
   repositories:
@@ -63,24 +68,33 @@ jobs:
       # (Project Settings->Pipelines->Service Connections)
       - template: maven/task-authenticate.yml@templates
 
-      - template: maven/task-cache.yml@templates
-
-      - template: maven/task-test-and-verify.yml@templates
-        parameters:
-          checkStyleRunAnalysis: ${{ variables.checkStyleRunAnalysis }}
-
-      - template: maven/task-sonar-analyze.yml@templates
-
+#      - template: maven/task-cache.yml@templates
+#
+#      - template: maven/task-test-and-verify.yml@templates
+#        parameters:
+#          checkStyleRunAnalysis: ${{ variables.checkStyleRunAnalysis }}
+#
+#      - template: maven/task-sonar-analyze.yml@templates
+#
+#      - task: Maven@3
+#        displayName: 'Maven install and deploy'
+#        inputs:
+#          mavenPomFile: 'pom.xml'
+#          mavenOptions: '-Xmx3072m'
+#          jdkArchitectureOption: 'x64'
+#          publishJUnitResults: false
+#          testResultsFiles: '**/TEST-*.xml'
+#          goals: 'deploy'
+#          #options: 'clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+#          options: 'clean verify -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+#
+# TODO: cleanup- variables commented out code
+#
       - task: Maven@3
-        displayName: 'Maven install and deploy'
+        displayName: 'Maven deploy of the project root/base pom.xml file'
         inputs:
-          mavenPomFile: 'pom.xml'
-          mavenOptions: '-Xmx3072m'
-          jdkArchitectureOption: 'x64'
-          publishJUnitResults: false
-          testResultsFiles: '**/TEST-*.xml'
-          goals: 'deploy'
-          options: 'clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+          goals: 'deploy:deploy-file'
+          options: '-Dfile=pom.xml -DpomFile=pom.xml -Durl=https://nexus.prod-bip-ci.ssb.no/repository/maven-snapshots/ -DgeneratePom=false -DrepositoryId=bip-nexus-snapshots'
 
       # Publish pipeline artifact
       - publish: target
