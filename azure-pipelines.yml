@@ -167,22 +167,22 @@ jobs:
       # Problem is source folder for file copying
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '/*.jar'
           targetFolder: './client/target'
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '/libs/*'
           targetFolder: './client/target/libs'
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '/classes/*.xml'
           targetFolder: './client/target/classes'
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '/classes/*.yaml'
           targetFolder: './client/target/classes'
 
