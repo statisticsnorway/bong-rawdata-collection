@@ -108,36 +108,48 @@ jobs:
         artifact: ${{ variables.artifactNameClient }}
 
       - bash: |
+          echo ''
           echo 'ls in default'
-          echo ''
           ls
-          cd $(Pipeline.Workspace)
+
+          echo ''
+          echo 'ls in default.client'
+          cd client
+          ls
+
+          echo ''
           echo 'ls in pipeline.workspace'
-          echo ''
+          cd $(Pipeline.Workspace)
           ls
-          cd ${{ variables.artifactNameClient }}
+
           echo 'ls in pipeline.workspace.artifactname'
           echo ''
+          cd ${{ variables.artifactNameClient }}
           ls
-          cd ../s
+
           echo 'ls in pipeline.workspace.s'
           echo ''
+          cd ../s
           ls
-          cd $(System.DefaultWorkingDirectory)
+
           echo 'ls in system.defaultworkingdirectory'
           echo ''
+          cd $(System.DefaultWorkingDirectory)
           ls
-          cd $(Agent.BuildDirectory)
+
           echo 'ls in agent.builddirectory'
           echo ''
+          cd $(Agent.BuildDirectory)
           ls
-          cd $(Build.SourcesDirectory)
+
           echo 'ls in build.sourcesdirectory'
           echo ''
+          cd $(Build.SourcesDirectory)
           ls
-          cd $(Pipeline.Workspace)/s/client
+
           echo 'ls in pipeline.workspace.s/client'
           echo ''
+          cd $(Pipeline.Workspace)/s/client
           ls
 
       # Copy pipeline artifact into working directory
