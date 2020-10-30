@@ -127,6 +127,7 @@ jobs:
 
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
         parameters:
+          Dockerfile: ${{ variables.artifactNameClient }}/Dockerfile
           imageName: ${{ variables.imageNameClient }}
           repoName: ${{ variables.repoNameClient }}
   #- job: buildClientProxyDockerFile
