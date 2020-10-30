@@ -108,8 +108,16 @@ jobs:
         artifact: ${{ variables.artifactNameClient }}
 
       - bash: |
-          cd $(Pipeline.Workspace)/${{ variables.artifactNameClient }}
-          echo 'ls in pipeline workspace/artifactname'
+          echo 'ls in default'
+          ls
+          cd $(Pipeline.Workspace)
+          echo 'ls in pipeline.workspace'
+          ls
+          cd ${{ variables.artifactNameClient }}
+          echo 'ls in pipeline.workspace.artifactname'
+          ls
+          cd ../s
+          echo 'ls in pipeline.workspace.s'
           ls
 
       # Copy pipeline artifact into working directory
