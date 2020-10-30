@@ -108,6 +108,7 @@ jobs:
         artifact: ${{ variables.artifactNameClient }}
 
       - bash: |
+          cd $(Pipeline.Workspace)
           ls
 
       # Copy pipeline artifact into working directory
