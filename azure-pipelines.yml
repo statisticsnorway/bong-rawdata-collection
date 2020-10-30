@@ -107,6 +107,9 @@ jobs:
         displayName: 'Download client pipeline artifact'
         artifact: ${{ variables.artifactNameClient }}
 
+      - bash: |
+          ls
+
       # Copy pipeline artifact into working directory
       - task: CopyFiles@2
         inputs:
