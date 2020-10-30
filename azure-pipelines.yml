@@ -123,6 +123,11 @@ jobs:
           ls
 
           echo ''
+          echo 'ls in default.client.target'
+          cd client.target
+          ls
+
+          echo ''
           echo 'ls in pipeline.workspace'
           cd $(Pipeline.Workspace)
           ls
