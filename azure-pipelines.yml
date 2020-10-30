@@ -84,7 +84,7 @@ jobs:
           publishJUnitResults: false
           testResultsFiles: '**/TEST-*.xml'
           goals: 'deploy'
-          options: 'clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+          options: 'clean verify -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
 
       - bash: |
           mkdir target
@@ -166,18 +166,22 @@ jobs:
       # Copy pipeline artifact into working directory
       - task: CopyFiles@2
         inputs:
+          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar'
           targetFolder: './client/target'
       - task: CopyFiles@2
         inputs:
+          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/*'
           targetFolder: './client/target/libs'
       - task: CopyFiles@2
         inputs:
+          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml'
           targetFolder: './client/target/classes'
       - task: CopyFiles@2
         inputs:
+          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml'
           targetFolder: './client/target/classes'
 
