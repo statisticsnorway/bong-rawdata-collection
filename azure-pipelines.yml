@@ -164,25 +164,26 @@ jobs:
 
 
       # Copy pipeline artifact into working directory
+      # Problem is source folder for file copying
       - task: CopyFiles@2
         inputs:
           sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar'
+          contents: '/*.jar'
           targetFolder: './client/target'
       - task: CopyFiles@2
         inputs:
           sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/*'
+          contents: '/libs/*'
           targetFolder: './client/target/libs'
       - task: CopyFiles@2
         inputs:
           sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml'
+          contents: '/classes/*.xml'
           targetFolder: './client/target/classes'
       - task: CopyFiles@2
         inputs:
           sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml'
+          contents: '/classes/*.yaml'
           targetFolder: './client/target/classes'
 
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
