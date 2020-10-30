@@ -166,22 +166,22 @@ jobs:
       # Copy pipeline artifact into working directory
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar'
           targetFolder: './client/target'
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/*'
           targetFolder: './client/target/libs'
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml'
           targetFolder: './client/target/classes'
       - task: CopyFiles@2
         inputs:
-          sourceFolder: '(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
+          sourceFolder: 's/(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml'
           targetFolder: './client/target/classes'
 
