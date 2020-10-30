@@ -89,18 +89,22 @@ jobs:
       - bash: |
           mkdir target
 
-      # Publish pipeline artifact
-      - publish: target
-        displayName: 'Publish artifact to pipeline'
-        artifact: ${{ variables.artifactName }}
+      # Publish pipeline artifacts
+#      - publish: target
+#        displayName: 'Publish root artifact to pipeline'
+#        artifact: ${{ variables.artifactName }}
+
+      - publish: client/target
+        displayName: 'Publish client artifact to pipeline'
+        artifact: ${{ variables.artifactNameClient }}
 
   - job: buildClientModuleDockerFile
     dependsOn: buildTestPublishToPipeline
     steps:
 
-      # Download pipeline artifact
+      # Download client pipeline artifact
       - download: current
-        displayName: 'Download pipeline artifact'
+        displayName: 'Download client pipeline artifact'
         artifact: ${{ variables.artifactNameClient }}
 
       # Copy pipeline artifact into working directory
