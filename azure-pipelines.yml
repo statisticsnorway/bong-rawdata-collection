@@ -108,6 +108,8 @@ jobs:
         artifact: ${{ variables.artifactNameClient }}
 
       - bash: |
+          mkdir client/target/dependency
+
           echo ''
           echo 'ls in default'
           ls
@@ -152,10 +154,6 @@ jobs:
           cd $(Pipeline.Workspace)/s/client
           ls
 
-#          mkdir client/target
-#          mkdir client/target/libs
-#          mkdir client/target/classes
-          mkdir client/target/dependency
 
       # Copy pipeline artifact into working directory
       - task: CopyFiles@2
