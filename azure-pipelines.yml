@@ -123,10 +123,6 @@ jobs:
           echo 'ls in pipeline.workspace.s'
           echo ''
           ls
-          cd ${{ System.DefaultWorkingDirectory }}
-          echo 'ls in system.defaultworkingdirectory'
-          echo ''
-          ls
           cd ${{ Agent.BuildDirectory }}
           echo 'ls in agent.builddirectory'
           echo ''
