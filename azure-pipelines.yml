@@ -108,6 +108,9 @@ jobs:
         artifact: ${{ variables.artifactNameClient }}
 
       - bash: |
+          mkdir client/target
+          mkdir client/target/libs
+          mkdir client/target/classes
           mkdir client/target/dependency
 
           echo ''
