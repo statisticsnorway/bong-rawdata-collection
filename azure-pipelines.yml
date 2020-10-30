@@ -84,7 +84,7 @@ jobs:
           publishJUnitResults: false
           testResultsFiles: '**/TEST-*.xml'
           goals: 'deploy'
-          options: 'clean verify -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+          options: 'clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
 
       - bash: |
           mkdir target
@@ -122,33 +122,33 @@ jobs:
           cd $(Pipeline.Workspace)
           ls
 
-          echo 'ls in pipeline.workspace.artifactname'
           echo ''
+          echo 'ls in pipeline.workspace.artifactname'
           cd ${{ variables.artifactNameClient }}
           ls
 
-          echo 'ls in pipeline.workspace.s'
           echo ''
+          echo 'ls in pipeline.workspace.s'
           cd ../s
           ls
 
-          echo 'ls in system.defaultworkingdirectory'
           echo ''
+          echo 'ls in system.defaultworkingdirectory'
           cd $(System.DefaultWorkingDirectory)
           ls
 
-          echo 'ls in agent.builddirectory'
           echo ''
+          echo 'ls in agent.builddirectory'
           cd $(Agent.BuildDirectory)
           ls
 
-          echo 'ls in build.sourcesdirectory'
           echo ''
+          echo 'ls in build.sourcesdirectory'
           cd $(Build.SourcesDirectory)
           ls
 
-          echo 'ls in pipeline.workspace.s/client'
           echo ''
+          echo 'ls in pipeline.workspace.s/client'
           cd $(Pipeline.Workspace)/s/client
           ls
 
@@ -156,23 +156,23 @@ jobs:
       - task: CopyFiles@2
         inputs:
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar'
-          targetFolder: './target'
+          targetFolder: './client/target'
       - task: CopyFiles@2
         inputs:
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/*'
-          targetFolder: './target/libs'
+          targetFolder: './client/target/libs'
       - task: CopyFiles@2
         inputs:
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml'
-          targetFolder: './target/classes'
+          targetFolder: './client/target/classes'
       - task: CopyFiles@2
         inputs:
           contents: '$(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml'
-          targetFolder: './target/classes'
+          targetFolder: './client/target/classes'
 
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
         parameters:
-          Dockerfile: ${{ variables.artifactNameClient }}/Dockerfile
+          Dockerfile: client/Dockerfile
           imageName: ${{ variables.imageNameClient }}
           repoName: ${{ variables.repoNameClient }}
   #- job: buildClientProxyDockerFile
