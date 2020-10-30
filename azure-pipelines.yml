@@ -124,7 +124,7 @@ jobs:
 
           echo ''
           echo 'ls in default.client.target'
-          cd client.target
+          cd target
           ls
 
           echo ''
