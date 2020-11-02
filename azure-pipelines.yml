@@ -146,54 +146,54 @@ jobs:
           echo "No .yaml files found in /classes/"
           fi
 
-          echo ''
-          echo 'ls in default'
-          ls
-
-          echo ''
-          echo 'ls in default.client'
-          cd client
-          ls
-
-          echo ''
-          echo 'ls in default.client.target'
-          cd target
-          ls
-
-          echo ''
-          echo 'ls in pipeline.workspace'
-          cd $(Pipeline.Workspace)
-          ls
-
-          echo ''
-          echo 'ls in pipeline.workspace.artifactname'
-          cd ${{ variables.artifactNameClient }}
-          ls
-
-          echo ''
-          echo 'ls in pipeline.workspace.s'
-          cd ../s
-          ls
-
-          echo ''
-          echo 'ls in system.defaultworkingdirectory'
-          cd $(System.DefaultWorkingDirectory)
-          ls
-
-          echo ''
-          echo 'ls in agent.builddirectory'
-          cd $(Agent.BuildDirectory)
-          ls
-
-          echo ''
-          echo 'ls in build.sourcesdirectory'
-          cd $(Build.SourcesDirectory)
-          ls
-
-          echo ''
-          echo 'ls in pipeline.workspace.s/client'
-          cd $(Pipeline.Workspace)/s/client
-          ls
+#          echo ''
+#          echo 'ls in default'
+#          ls
+#
+#          echo ''
+#          echo 'ls in default.client'
+#          cd client
+#          ls
+#
+#          echo ''
+#          echo 'ls in default.client.target'
+#          cd target
+#          ls
+#
+#          echo ''
+#          echo 'ls in pipeline.workspace'
+#          cd $(Pipeline.Workspace)
+#          ls
+#
+#          echo ''
+#          echo 'ls in pipeline.workspace.artifactname'
+#          cd ${{ variables.artifactNameClient }}
+#          ls
+#
+#          echo ''
+#          echo 'ls in pipeline.workspace.s'
+#          cd ../s
+#          ls
+#
+#          echo ''
+#          echo 'ls in system.defaultworkingdirectory'
+#          cd $(System.DefaultWorkingDirectory)
+#          ls
+#
+#          echo ''
+#          echo 'ls in agent.builddirectory'
+#          cd $(Agent.BuildDirectory)
+#          ls
+#
+#          echo ''
+#          echo 'ls in build.sourcesdirectory'
+#          cd $(Build.SourcesDirectory)
+#          ls
+#
+#          echo ''
+#          echo 'ls in pipeline.workspace.s/client'
+#          cd $(Pipeline.Workspace)/s/client
+#          ls
 
       # Copy pipeline artifact into working directory
       # Problem is source folder for file copying
