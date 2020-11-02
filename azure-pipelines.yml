@@ -14,7 +14,7 @@ resources:
     - repository: templates
       type: github
       name: statisticsnorway/azure-pipelines-templates
-      ref: refs/tags/1.1.6
+      ref: refs/tags/1.1.7
       endpoint: statisticsnorway (6)
 
 pool:
@@ -177,12 +177,12 @@ jobs:
 #          contents: './dependency/*'
 #          targetFolder: './client/target/dependency'
 
-
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
         parameters:
           Dockerfile: client/Dockerfile
           imageName: ${{ variables.imageNameClient }}
           repoName: ${{ variables.repoNameClient }}
+
   #- job: buildClientProxyDockerFile
   - job: buildClientProxyModuleDockerFile
     dependsOn: buildTestPublishToPipeline
