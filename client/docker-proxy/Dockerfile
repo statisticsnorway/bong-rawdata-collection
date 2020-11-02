@@ -25,6 +25,13 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - && \
     apt-get install -y docker-ce=5:19.03.13~3-0~debian-buster docker-ce-cli=5:19.03.13~3-0~debian-buster containerd.io && \
     rm -rf /var/lib/apt/lists/*
 
+# Update base image to fix vulnerabilities
+RUN apt update && \
+    apt-get -y clean all && \
+    apt-get -y update && \
+    apt-get -y upgrade && \
+    apt-get -y dist-upgrade
+
 ADD scripts/docker-start.bash /start.sh
 RUN chmod +x /start.sh
 
