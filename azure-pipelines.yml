@@ -145,6 +145,14 @@ jobs:
           else
           echo "No .yaml files found in /classes/"
           fi
+          files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/dependency/*)
+          if (( ${#files} ))
+          then
+          cp $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/dependency/* ./client/target/dependency
+          echo "Found and copied files in /dependency/"
+          else
+          echo "No .yaml files found in /dependency/"
+          fi
 
 #          echo ''
 #          echo 'ls in default'
