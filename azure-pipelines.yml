@@ -168,22 +168,22 @@ jobs:
       - task: CopyFiles@2
         inputs:
           sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '/*.jar'
+          contents: './*.jar'
           targetFolder: './client/target'
       - task: CopyFiles@2
         inputs:
           sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '/libs/*'
+          contents: './libs/*'
           targetFolder: './client/target/libs'
       - task: CopyFiles@2
         inputs:
           sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '/classes/*.xml'
+          contents: './classes/*.xml'
           targetFolder: './client/target/classes'
       - task: CopyFiles@2
         inputs:
           sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-          contents: '/classes/*.yaml'
+          contents: './classes/*.yaml'
           targetFolder: './client/target/classes'
 
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
