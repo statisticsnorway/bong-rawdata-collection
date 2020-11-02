@@ -185,7 +185,7 @@ jobs:
           repoName: ${{ variables.repoNameClient }}
   #- job: buildClientProxyDockerFile
   - job: buildClientProxyModuleDockerFile
-    dependsOn: buildClientModuleDockerFile
+    dependsOn: buildTestPublishToPipeline
     steps:
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
         parameters:
