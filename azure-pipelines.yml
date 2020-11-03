@@ -104,7 +104,6 @@ jobs:
 
       - bash: |
           mkdir client/target
-          mkdir client/target/libs
           mkdir client/target/classes
           mkdir client/target/dependency
 
@@ -116,14 +115,6 @@ jobs:
           else
           echo "No .jar files found"
           fi
-          files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/*)
-          if (( ${#files} ))
-          then
-          cp $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/libs/* ./client/target/libs
-          echo "Found and copied files in /libs"
-          else
-          echo "No files found in /libs"
-          fi
           files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml)
           if (( ${#files} ))
           then
@@ -131,14 +122,6 @@ jobs:
           echo "Found and copied .xml files in /classes/"
           else
           echo "No .xml files found in /classes/"
-          fi
-          files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml)
-          if (( ${#files} ))
-          then
-          cp $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.yaml ./client/target/classes
-          echo "Found and copied .yaml files in /classes/"
-          else
-          echo "No .yaml files found in /classes/"
           fi
           files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/dependency/*)
           if (( ${#files} ))
@@ -149,46 +132,8 @@ jobs:
           echo "No .yaml files found in /dependency/"
           fi
 
-      # Copy pipeline artifact into working directory
-      # Problem is source folder for file copying Or targeting the files
-#      - task: CopyFiles@2
-#        inputs:
-#          sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-#          contents: './*.jar'
-#          targetFolder: './client/target'
-#      - task: CopyFiles@2
-#        inputs:
-#          sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-#          contents: './libs/*'
-#          targetFolder: './client/target/libs'
-#      - task: CopyFiles@2
-#        inputs:
-#          sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-#          contents: './classes/*.xml'
-#          targetFolder: './client/target/classes'
-#      - task: CopyFiles@2
-#        inputs:
-#          sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-#          contents: './classes/*.yaml'
-#          targetFolder: './client/target/classes'
-#      - task: CopyFiles@2
-#        inputs:
-#          sourceFolder: '/$(Pipeline.Workspace)/${{ variables.artifactNameClient }}'
-#          contents: './dependency/*'
-#          targetFolder: './client/target/dependency'
-
       - template: docker/docker-build-image-and-push-to-gcr.yml@templates
         parameters:
           Dockerfile: client/Dockerfile
           imageName: ${{ variables.imageNameClient }}
           repoName: ${{ variables.repoNameClient }}
-
-  #- job: buildClientProxyDockerFile
-  - job: buildClientProxyModuleDockerFile
-    dependsOn: buildTestPublishToPipeline
-    steps:
-      - template: docker/docker-build-image-and-push-to-gcr.yml@templates
-        parameters:
-          Dockerfile: client/docker-proxy/Dockerfile
-          imageName: ${{ variables.imageNameClientProxy }}
-          repoName: ${{ variables.repoNameClientProxy }}

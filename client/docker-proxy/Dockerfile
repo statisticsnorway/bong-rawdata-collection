@@ -3,13 +3,6 @@
 #
 FROM debian:buster-slim
 
-# Update base image to fix vulnerabilities
-RUN apt update && \
-    apt-get -y clean all && \
-    apt-get -y update && \
-    apt-get -y upgrade && \
-    apt-get -y dist-upgrade
-
 RUN apt-get update; \
     apt-get install -y \
         apt-transport-https \
