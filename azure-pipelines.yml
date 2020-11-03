@@ -1,19 +1,130 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+name: $(Build.SourceBranch)-$(date:yyyyMMdd)$(rev:.r)
 
+  # Pipeline triggers on any branch and tag
 trigger:
-- master
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: statisticsnorway/azure-pipelines-templates
+      ref: refs/tags/1.1.7
+      endpoint: statisticsnorway (6)
 
 pool:
   vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  # Variables defined in Pipelines->Library->Variable Groups in your project in
+  # Azure Pipelines
+  - group: Hemmeligheter
+
+  # Variables defined here
+  - name: imageNameClient
+    value: 'eu.gcr.io/prod-bip/ssb/dapla/rawdata/rawdata-collection-client'
+  - name: repoNameClient
+    value: 'prod-bip/ssb/dapla/rawdata/rawdata-collection-client'
+  - name: artifactNameClient
+    value: 'rawdata-collection-client'
+  - name: mavenContainer
+    value: 'maven:3.6.3-openjdk-15'
+  - name: checkStyleRunAnalysis
+    value: 'false'
+  - name:  MAVEN_CACHE_FOLDER
+    value: $(Pipeline.Workspace)/.m2/repository
+  - name: MAVEN_OPTS
+    value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+
+jobs:
+  - job: buildTestPublishToPipeline
+    displayName: 'Compile and deploy app'
+    container: ${{ variables.mavenContainer }}
+
+    # Job condition: Run these jobs on any branch, but not on tags
+    condition:  not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+
+    # Steps in this job
+    steps:
+
+      # Authenticate Maven to Nexus using predefined Service Connections
+      # (Project Settings->Pipelines->Service Connections)
+      - template: maven/task-authenticate.yml@templates
+
+      - template: maven/task-cache.yml@templates
+
+      - template: maven/task-test-and-verify.yml@templates
+        parameters:
+          checkStyleRunAnalysis: ${{ variables.checkStyleRunAnalysis }}
+
+      - template: maven/task-sonar-analyze.yml@templates
+
+      - task: Maven@3
+        displayName: 'Maven install and deploy'
+        inputs:
+          mavenPomFile: 'pom.xml'
+          mavenOptions: '-Xmx3072m'
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: false
+          testResultsFiles: '**/TEST-*.xml'
+          goals: 'deploy'
+          options: 'clean verify dependency:copy-dependencies -DskipTests=true -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
+
+      - bash: |
+          mkdir target
+
+      - publish: client/target
+        displayName: 'Publish client artifact to pipeline'
+        artifact: ${{ variables.artifactNameClient }}
+
+  - job: buildClientModuleDockerFile
+    dependsOn: buildTestPublishToPipeline
+    steps:
+
+      # Download client pipeline artifact
+      - download: current
+        displayName: 'Download client pipeline artifact'
+        artifact: ${{ variables.artifactNameClient }}
+
+      # Copy pipeline artifact into working directory
+      - bash: |
+          mkdir client/target
+          mkdir client/target/classes
+          mkdir client/target/dependency
+
+          files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar)
+          if (( ${#files} ))
+          then
+          cp $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/*.jar ./client/target
+          echo "Found and copied.jar files"
+          else
+          echo "No .jar files found"
+          fi
+          files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml)
+          if (( ${#files} ))
+          then
+          cp $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/classes/*.xml ./client/target/classes
+          echo "Found and copied .xml files in /classes/"
+          else
+          echo "No .xml files found in /classes/"
+          fi
+          files=$(shopt -s nullglob dotglob; echo $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/dependency/*)
+          if (( ${#files} ))
+          then
+          cp $(Pipeline.Workspace)/${{ variables.artifactNameClient }}/dependency/* ./client/target/dependency
+          echo "Found and copied files in /dependency/"
+          else
+          echo "No .yaml files found in /dependency/"
+          fi
+
+      - template: docker/docker-build-image-and-push-to-gcr.yml@templates
+        parameters:
+          Dockerfile: client/Dockerfile
+          imageName: ${{ variables.imageNameClient }}
+          repoName: ${{ variables.repoNameClient }}
