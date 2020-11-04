@@ -54,7 +54,6 @@ public class CsvParser {
                     .withTrailingDelimiter(hasTrailingDelimiter)
                     .parse(csvReader)) {
 
-
                 long iterationCount = 0;
                 for (Iterator<CSVRecord> it = parser.iterator(); it.hasNext(); ) {
                     CSVRecord csvRecord = it.next();
@@ -101,7 +100,7 @@ public class CsvParser {
     }
 
     static public String formatToken(String str) {
-        return CaseUtils.toCamelCase(removeChars(str, "\\?"), true, '\'', '_', '(', ')'); // avro mappings
+        return CaseUtils.toCamelCase(removeChars(str, "\\?"), true, '\'', '-', '_', '(', ')'); // avro mappings
     }
 
     static public String removeChars(String str, String... chars) {
