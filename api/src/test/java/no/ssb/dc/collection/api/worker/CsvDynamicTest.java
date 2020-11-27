@@ -119,9 +119,9 @@ public class CsvDynamicTest {
     @Test
     public void deserializeSpec() throws IOException {
         SpecificationDeserializer deserializer = new SpecificationDeserializer();
-        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get("target/test-classes/no/ssb/dc/collection/api/worker"));
+        Path targetPath = Paths.get(".").toAbsolutePath().normalize().resolve(Paths.get("src/test/resources/no/ssb/dc/collection/api/worker/spec/example/dummy/2020"));
         assertTrue(Files.isDirectory(targetPath));
-        CsvSpecification specification = deserializer.parse(Files.readString(targetPath.resolve("generic-spec.yaml"), StandardCharsets.UTF_8));
+        CsvSpecification specification = deserializer.parse(Files.readString(targetPath.resolve("example-spec.yaml"), StandardCharsets.UTF_8));
         deserializer.validate(specification);
         LOG.trace("spec: {}", specification);
     }

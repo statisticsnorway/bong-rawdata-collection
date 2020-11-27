@@ -19,10 +19,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class CsvParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(CsvParser.class);
+
+    static final char[] ILLEGAL_AVRO_CHARS;
 
     private final BufferedReader csvReader;
     private final String filepath;
@@ -30,6 +33,16 @@ public class CsvParser {
     private final String filename;
     private final char delimiter;
     private final int dryRun;
+
+    static {
+        List<Character> illegalChars = new ArrayList<>();
+        IntStream.range(33, 47).forEach(i -> illegalChars.add((char) i));
+        IntStream.range(58, 64).forEach(i -> illegalChars.add((char) i));
+        IntStream.range(91, 96).forEach(i -> illegalChars.add((char) i));
+        IntStream.range(123, 126).forEach(i -> illegalChars.add((char) i));
+        ILLEGAL_AVRO_CHARS = new char[illegalChars.size()];
+        for (int i = 0; i < illegalChars.size(); i++) ILLEGAL_AVRO_CHARS[i] = illegalChars.get(i);
+    }
 
     public CsvParser(BufferedReader csvReader, String filepath, List<String> files, String filename, char delimiter, int dryRun) {
         this.csvReader = csvReader;
@@ -101,7 +114,7 @@ public class CsvParser {
     }
 
     static public String formatToken(String str) {
-        return CaseUtils.toCamelCase(removeChars(str, "\\?"), true, '\'', '_', '(', ')'); // avro mappings
+        return CaseUtils.toCamelCase(removeChars(str, "\\?"), true, ILLEGAL_AVRO_CHARS); // avro mappings
     }
 
     static public String removeChars(String str, String... chars) {
