@@ -9,6 +9,7 @@ import no.ssb.rawdata.api.RawdataMessage;
 import no.ssb.rawdata.payload.encryption.EncryptionClient;
 import no.ssb.service.provider.api.ProviderConfigurator;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +54,15 @@ public class ConsumerTest {
     static void beforeAll() {
         encryptionClient = new EncryptionClient();
 
-        secretKey = encryptionClient.generateSecretKey(
-                configuration.evaluateToString("bucket.encryption.key").toCharArray(),
-                configuration.evaluateToString("bucket.encryption.salt").getBytes()
-        ).getEncoded();
+        if (configuration.evaluateToString("bucket.encryption.key") != null) {
+            secretKey = encryptionClient.generateSecretKey(
+                    configuration.evaluateToString("bucket.encryption.key").toCharArray(),
+                    configuration.evaluateToString("bucket.encryption.salt").getBytes()
+            ).getEncoded();
+        }
     }
 
+    @Disabled
     @Test
     void consume() throws Exception {
         try (RawdataClient client = ProviderConfigurator.configure(
