@@ -34,6 +34,18 @@
         </dependency>
 
         <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId>
+            <version>68.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j-charset</artifactId>
+            <version>68.2</version>
+        </dependency>
+
+        <dependency>
             <groupId>no.ssb.rawdata</groupId>
             <artifactId>rawdata-client-provider-gcs</artifactId>
             <version>0.9</version>

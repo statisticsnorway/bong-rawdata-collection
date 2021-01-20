@@ -8,6 +8,12 @@ module rawdata.collection.client {
     requires no.ssb.rawdata.postgres;
     requires no.ssb.rawdata.kafka;
 
+    requires com.ibm.icu;
+    requires com.ibm.icu.charset;
+
+    requires no.ssb.rawdata.api;
+    requires no.ssb.rawdata.encryption;
+
     requires org.slf4j;
 
     opens no.ssb.dc.collection.client to rawdata.collection.api;
