@@ -54,7 +54,7 @@ public class KostraTest {
         gcsTargetConfiguration = GCSConfiguration.create(Map.of(
                 "target.rawdata.topic", "2021-01-28-kostra-regnskap-2019",
                 "target.gcs.bucket-name", "ssb-rawdata-prod-kostra",
-                "target.gcs.service-account.key-file", secretConfig.evaluateToString("gcs.service-account.key-file"),
+                "target.gcs.service-account.key-file", secretConfig.evaluateToString("gcs.service-account.key-file") != null ? secretConfig.evaluateToString("gcs.service-account.key-file") : "",
                 "target.local-temp-folder", "target/_tmp_avro_"
         ));
     }
