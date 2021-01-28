@@ -10,6 +10,15 @@ import no.ssb.dc.collection.api.config.RequiredKeys;
 
 import java.util.Map;
 
+/*
+  Known issues:
+
+  - Application: target skal være `kostra` og ikke `kostra-fs` (husk å tune docker-collection.sh command)
+  - JSON Data format på strøm (verifiser med Kenneth)
+  -
+
+ */
+
 @Name("source-kostra")
 @Namespace("source")
 @EnvironmentPrefix("BONG_")
@@ -18,12 +27,19 @@ import java.util.Map;
 })
 public interface SourceKostraConfiguration extends BaseConfiguration {
 
+    /*
+     * Refer to shell scripts: rawdata-collection.sh (set env-vars using cli options) passed to docker-collection-cli.sh (read env-var mappings)
+     */
+
+    // /dapla/bin/conf/application-kostra.properties#source.path="/source" (which is a volume mount)
     @Property("path")
     String sourcePath();
 
+    // /dapla/bin/conf/application-kostra.properties#source.file="$JSON_FILE" (env-var substitute)
     @Property("file")
     String sourceFile();
 
+    // /dapla/bin/conf/application-kostra.properties#source.specification.file="$SPECIFICATION_FILE" (env-var substitute)
     @Property("specification.file")
     String specificationFile();
 
