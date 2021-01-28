@@ -74,8 +74,10 @@ public class KostraTest {
         }
     }
 
+
+    @Disabled
     @Test
-    public void parseKosraJson() throws IOException {
+    public void parseKostraJson() throws IOException {
         Path testData = Paths.get(".").normalize().toAbsolutePath().resolve(Paths.get("src/test/resources/data/kostradata.json"));
         try (InputStream is = new FileInputStream(testData.toFile())) {
             JsonNode root = JsonParser.createJsonParser().fromJson(is, JsonNode.class);
