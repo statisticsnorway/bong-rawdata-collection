@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-class KostraTest {
+public class KostraTest {
 
     static final Logger LOG = LoggerFactory.getLogger(KostraTest.class);
 
@@ -32,7 +32,7 @@ class KostraTest {
     static LocalFileSystemConfiguration targetConfiguration;
 
     @BeforeAll
-    static void beforeAll() {
+    public static void beforeAll() {
         sourceConfiguration = SourceKostraConfiguration.create(Map.of(
                 "source.path", Paths.get(".").normalize().toAbsolutePath().resolve(Paths.get("src/test/resources/data")).toString(),
                 "source.file", "kostradata.json",
@@ -49,7 +49,7 @@ class KostraTest {
 
     @Disabled
     @Test
-    void produceRawdata() {
+    public void produceRawdata() {
         try (KostraWorker kostraWorker = new KostraWorker(sourceConfiguration, targetConfiguration)) {
             kostraWorker.produce();
         }
@@ -57,7 +57,7 @@ class KostraTest {
 
     @Disabled
     @Test
-    void consumeRawdata() throws Exception {
+    public void consumeRawdata() throws Exception {
         try (RawdataClient client = ProviderConfigurator.configure(targetConfiguration.asMap(), targetConfiguration.rawdataClientProvider(), RawdataClientInitializer.class)) {
             try (RawdataConsumer consumer = client.consumer(targetConfiguration.topic())) {
                 RawdataMessage message;
@@ -75,7 +75,7 @@ class KostraTest {
     }
 
     @Test
-    void parseKosraJson() throws IOException {
+    public void parseKosraJson() throws IOException {
         Path testData = Paths.get(".").normalize().toAbsolutePath().resolve(Paths.get("src/test/resources/data/kostradata.json"));
         try (InputStream is = new FileInputStream(testData.toFile())) {
             JsonNode root = JsonParser.createJsonParser().fromJson(is, JsonNode.class);
