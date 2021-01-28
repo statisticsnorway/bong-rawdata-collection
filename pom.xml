@@ -51,6 +51,7 @@
         <module>api</module>
         <module>bong</module>
         <module>client</module>
+        <module>kostra</module>
     </modules>
 
     <profiles>

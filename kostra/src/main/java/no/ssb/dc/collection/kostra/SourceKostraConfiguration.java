@@ -1,4 +1,4 @@
-package no.ssb.dc.collection.bong.rema;
+package no.ssb.dc.collection.kostra;
 
 import no.ssb.dc.collection.api.config.BaseConfiguration;
 import no.ssb.dc.collection.api.config.ConfigurationFactory;
@@ -10,23 +10,22 @@ import no.ssb.dc.collection.api.config.RequiredKeys;
 
 import java.util.Map;
 
-@Name("source-rema")
+@Name("source-kostra")
 @Namespace("source")
 @EnvironmentPrefix("BONG_")
 @RequiredKeys({
-        "source.year",
-        "source.month"
+        "source.path"
 })
-public interface SourceRemaConfiguration extends BaseConfiguration {
+public interface SourceKostraConfiguration extends BaseConfiguration {
 
-    @Property("year")
-    String year();
+    @Property("path")
+    String sourcePath();
 
-    @Property("month")
-    String month();
+    @Property("file")
+    String sourceFile();
 
-    @Property("root.path")
-    String rootPath();
+    @Property("specification.file")
+    String specificationFile();
 
     @Property("queue.capacity")
     Boolean hasQueueCapacity();
@@ -37,16 +36,16 @@ public interface SourceRemaConfiguration extends BaseConfiguration {
     @Override
     default Map<String, String> defaultValues() {
         return Map.of(
-                "root.path", "/source",
+                "path", "/source",
                 "queue.capacity", "1000" // flush buffer on threshold
         );
     }
 
-    static SourceRemaConfiguration create() {
-        return ConfigurationFactory.createOrGet(SourceRemaConfiguration.class);
+    static SourceKostraConfiguration create() {
+        return ConfigurationFactory.createOrGet(SourceKostraConfiguration.class);
     }
 
-    static SourceRemaConfiguration create(Map<String, String> overrideValues) {
-        return ConfigurationFactory.createOrGet(SourceRemaConfiguration.class, overrideValues);
+    static SourceKostraConfiguration create(Map<String, String> overrideValues) {
+        return ConfigurationFactory.createOrGet(SourceKostraConfiguration.class, overrideValues);
     }
 }

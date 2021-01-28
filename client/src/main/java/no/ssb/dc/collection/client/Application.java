@@ -13,6 +13,8 @@ import no.ssb.dc.collection.api.worker.CsvSpecification;
 import no.ssb.dc.collection.api.worker.SpecificationDeserializer;
 import no.ssb.dc.collection.bong.rema.RemaBongWorker;
 import no.ssb.dc.collection.bong.rema.SourceRemaConfiguration;
+import no.ssb.dc.collection.kostra.KostraWorker;
+import no.ssb.dc.collection.kostra.SourceKostraConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +97,14 @@ public class Application implements Runnable {
                     }
                 }),
                 // TODO deprecate custom workers
+                new Command("produce", "kostra-fs", () -> {
+                    try (KostraWorker worker = new KostraWorker(SourceKostraConfiguration.create(overrideConfig), Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")))) {
+                        if (!worker.validate()) {
+                            return;
+                        }
+                        worker.produce();
+                    }
+                }),
                 new Command("produce", "rema-fs", () -> {
                     try (RemaBongWorker worker = new RemaBongWorker(SourceRemaConfiguration.create(overrideConfig), Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")))) {
                         if (!worker.validate()) {

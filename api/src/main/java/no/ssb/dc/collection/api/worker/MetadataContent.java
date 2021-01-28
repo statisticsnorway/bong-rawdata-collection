@@ -126,6 +126,14 @@ public class MetadataContent {
             return this;
         }
 
+        public Builder jsonMapping(String jsonProperty, String dataType) {
+            ObjectNode mappingNode = jsonParser.createObjectNode();
+            mappingNode.put("name", jsonProperty);
+            mappingNode.put("data-type", dataType);
+            mappingArray.add(mappingNode);
+            return this;
+        }
+
         public MetadataContent build() {
             ArrayNode elementsArray = jsonParser.createArrayNode();
             ObjectNode elementNode = jsonParser.createObjectNode();
