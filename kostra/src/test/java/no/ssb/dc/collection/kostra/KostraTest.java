@@ -34,10 +34,16 @@ public class KostraTest {
 
     @BeforeAll
     public static void beforeAll() {
+        /*
+         * Copy sample to secret props and configure your local env
+         */
         secretConfig = new StoreBasedDynamicConfiguration.Builder()
                 .propertiesResource("application-secret.properties")
                 .build();
 
+        /*
+         * Local source configuration
+         */
         sourceConfiguration = SourceKostraConfiguration.create(Map.of(
                 "source.path", Paths.get(".").normalize().toAbsolutePath().resolve(Paths.get("src/test/resources/data")).toString(),
                 "source.file", "kostradata.json",
@@ -45,12 +51,18 @@ public class KostraTest {
                 "source.queue.capacity", "100"
         ));
 
+        /*
+         * RawdataClient local configuration
+         */
         targetConfiguration = LocalFileSystemConfiguration.create(Map.of(
                 "target.rawdata.topic", "kostra-target-test",
                 "target.local-temp-folder", "target/_tmp_avro_",
                 "target.filesystem.storage-folder", "target/rawdata-store"
         ));
 
+        /*
+         * RawdataClient Google Cloud Storage (GCS) configuration
+         */
         gcsTargetConfiguration = GCSConfiguration.create(Map.of(
                 "target.rawdata.topic", "2021-01-28-kostra-regnskap-2019",
                 "target.gcs.bucket-name", "ssb-rawdata-prod-kostra",
@@ -121,5 +133,4 @@ public class KostraTest {
             }
         }
     }
-
 }
