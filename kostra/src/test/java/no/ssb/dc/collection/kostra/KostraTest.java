@@ -76,8 +76,9 @@ public class KostraTest {
         }
     }
 
+    @Disabled
     @Test
-    void streamParser() {
+    public void streamParser() {
         try (KostraWorker kostraWorker = new KostraWorker(sourceConfiguration, targetConfiguration)) {
             kostraWorker.parser("UTF-8", this::handleStructure, this::handleDataElement);
         }
