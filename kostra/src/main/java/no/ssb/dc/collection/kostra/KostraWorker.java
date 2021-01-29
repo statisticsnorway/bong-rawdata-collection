@@ -148,7 +148,7 @@ public class KostraWorker implements AutoCloseable {
                 .join();
     }
 
-    void parser(String charset, Consumer<ArrayNode> structureCallback, Consumer<ArrayNode> dataElementCallback) {
+    void parse(String charset, Consumer<ArrayNode> structureCallback, Consumer<ArrayNode> dataElementCallback) {
         try {
             Path source = Paths.get(sourceConfiguration.sourcePath()).resolve(sourceConfiguration.sourceFile());
             JsonParser jsonParser = JsonParser.createJsonParser();
@@ -195,7 +195,7 @@ public class KostraWorker implements AutoCloseable {
         String sourceCharset = getString(fileDescriptor, "charset");
 
         AtomicLong positionRef = new AtomicLong(0);
-        parser(sourceCharset, structureArrayNodeRef::set, dataElementArrayNode -> {
+        parse(sourceCharset, structureArrayNodeRef::set, dataElementArrayNode -> {
             String position = String.valueOf(positionRef.incrementAndGet());
 
             // produce rawdata message
