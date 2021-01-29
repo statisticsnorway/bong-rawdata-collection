@@ -10,15 +10,6 @@ import no.ssb.dc.collection.api.config.RequiredKeys;
 
 import java.util.Map;
 
-/*
-  Known issues:
-
-  - Application: target skal være `kostra` og ikke `kostra-fs` (husk å tune docker-collection.sh command)
-  - JSON Data format på strøm (verifiser med Kenneth)
-  -
-
- */
-
 @Name("source-kostra")
 @Namespace("source")
 @EnvironmentPrefix("BONG_")
