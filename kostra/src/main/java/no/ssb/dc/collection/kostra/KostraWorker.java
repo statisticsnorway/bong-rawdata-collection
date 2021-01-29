@@ -1,5 +1,7 @@
 package no.ssb.dc.collection.kostra;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -17,9 +19,11 @@ import no.ssb.service.provider.api.ProviderConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +34,8 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /*
     kostra stream
@@ -142,82 +148,105 @@ public class KostraWorker implements AutoCloseable {
                 .join();
     }
 
-    public void produce() {
-        LOG.info("Source path: {}", sourcePath.toString());
-
-        Path jsonFilePath = sourcePath.resolve(Paths.get(sourceConfiguration.sourceFile()));
-
-        try (InputStream is = new FileInputStream(jsonFilePath.toFile())) {
+    void parser(String charset, Consumer<ArrayNode> structureCallback, Consumer<ArrayNode> dataElementCallback) {
+        try {
+            Path source = Paths.get(sourceConfiguration.sourcePath()).resolve(sourceConfiguration.sourceFile());
             JsonParser jsonParser = JsonParser.createJsonParser();
+            JsonFactory jsonfactory = new JsonFactory();
+            LOG.info("Parse file {} with {} encoding", source.normalize().toAbsolutePath().toString(), Charset.forName(charset));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(source.toFile()), charset))) {
+                try (com.fasterxml.jackson.core.JsonParser parser = jsonfactory.createParser(reader)) {
+                    // fail if json is not an object
+                    if (parser.nextToken() != JsonToken.START_OBJECT) {
+                        throw new IllegalStateException("Array node NOT found!");
+                    }
 
-            JsonNode rootNode = jsonParser.fromJson(is, JsonNode.class);
+                    // read array tokens
+                    JsonToken jsonToken;
+                    while ((jsonToken = parser.nextToken()) != JsonToken.START_ARRAY && jsonToken != null) {
+                        if ("structure".equals(parser.currentName()) && (jsonToken = parser.nextToken()) == JsonToken.START_ARRAY) {
+                            ArrayNode jsonNode = jsonParser.mapper().readValue(parser, ArrayNode.class);
+                            structureCallback.accept(jsonNode);
 
-            ArrayNode structureArrayNode = (ArrayNode) rootNode.get("structure");
-            // TODO convert structure[].name and .type to schema mapping
-
-            ArrayNode dataNode = (ArrayNode) rootNode.get("data");
-            for (int i = 0; i < dataNode.size(); i++) {
-                String position = String.valueOf(i + 1);
-                ArrayNode dataElementNode = (ArrayNode) dataNode.get(i);
-
-                // produce rawdata message
-                ObjectNode targetElementDocument = jsonParser.createObjectNode();
-                targetElementDocument.set("structure", structureArrayNode);
-                ArrayNode targetDataArrayNode = jsonParser.createArrayNode();
-                targetDataArrayNode.add(dataElementNode);
-                targetElementDocument.set("data", targetDataArrayNode);
-                byte[] bytes = jsonParser.toJSON(targetElementDocument).getBytes();
-                LOG.trace("{}:\n{}", i + 1, jsonParser.toPrettyJSON(targetElementDocument));
-
-                // produce manifest json
-                JsonNode metadata = specification.withArray("metadata");
-                JsonNode fileDescriptor = specification.withArray("fileDescriptor");
-                MetadataContent.Builder metadataContentBuilder = new MetadataContent.Builder()
-                        .topic(producer.topic())
-                        .position(position)
-                        .resourceType("entry")
-                        .contentKey("entry")
-                        .source(getString(metadata, "source"))
-                        .dataset(getString(metadata, "dataset"))
-                        .tag(getString(metadata, "tag"))
-                        .description(getString(metadata, "description"))
-                        .charset(StandardCharsets.UTF_8.displayName())
-                        .contentType(getString(fileDescriptor, "contentType"))
-                        .contentLength(bytes.length)
-                        .markCreatedDate();
-
-                // store json mapping
-                metadataContentBuilder
-                        .sourcePath(sourceConfiguration.sourcePath())
-                        .sourceFile(sourceConfiguration.sourceFile())
-                        .sourceCharset(getString(fileDescriptor, "charset"))
-                        .recordType(BufferedRawdataProducer.RecordType.SINGLE.name().toLowerCase());
-
-                for (int j = 0; j < structureArrayNode.size(); j++) {
-                    JsonNode structureElementNode = structureArrayNode.get(j);
-                    String name = structureElementNode.get("name").asText();
-                    String type = structureElementNode.get("type").asText();
-                    metadataContentBuilder.jsonMapping(name, asDataTypeFormat(type));
-                }
-
-                MetadataContent metadataContent = metadataContentBuilder.build();
-
-                CompletableFuture<RawdataMessageBuffer> future = offerMessage(new RawdataMessageBuffer(producer, position, bytes, metadataContent, encryptionClient, secretKey));
-                if (!futures.offer(future)) {
-                    commitMessages();
-
-                    // re-offer message
-                    if (!futures.offer(future)) {
-                        throw new IllegalStateException("Unable to offer future! Out of capacity: " + queueCapacity);
+                        } else if ("data".equals(parser.currentName()) && jsonToken == JsonToken.FIELD_NAME) {
+                            if ((jsonToken = parser.nextToken()) == JsonToken.START_ARRAY) {
+                                while ((jsonToken = parser.nextToken()) == JsonToken.START_ARRAY) {
+                                    ArrayNode jsonNode = jsonParser.mapper().readValue(parser, ArrayNode.class);
+                                    dataElementCallback.accept(jsonNode);
+                                }
+                            }
+                        }
                     }
                 }
             }
-
-            //LOG.trace("{}", jsonParser.toPrettyJSON(root));
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void produce() {
+        JsonParser jsonParser = JsonParser.createJsonParser();
+
+        AtomicReference<ArrayNode> structureArrayNodeRef = new AtomicReference<>();
+
+        // produce manifest json
+        JsonNode metadata = specification.withArray("metadata");
+        JsonNode fileDescriptor = specification.withArray("fileDescriptor");
+        String sourceCharset = getString(fileDescriptor, "charset");
+
+        AtomicLong positionRef = new AtomicLong(0);
+        parser(sourceCharset, structureArrayNodeRef::set, dataElementArrayNode -> {
+            String position = String.valueOf(positionRef.incrementAndGet());
+
+            // produce rawdata message
+            ObjectNode targetElementDocument = jsonParser.createObjectNode();
+            targetElementDocument.set("structure", structureArrayNodeRef.get());
+            ArrayNode targetDataArrayNode = jsonParser.createArrayNode();
+            targetDataArrayNode.add(dataElementArrayNode);
+            targetElementDocument.set("data", targetDataArrayNode);
+            byte[] bytes = jsonParser.toJSON(targetElementDocument).getBytes();
+            LOG.trace("{}:\n{}", positionRef.get(), jsonParser.toPrettyJSON(targetElementDocument));
+
+            MetadataContent.Builder metadataContentBuilder = new MetadataContent.Builder()
+                    .topic(producer.topic())
+                    .position(position)
+                    .resourceType("entry")
+                    .contentKey("entry")
+                    .source(getString(metadata, "source"))
+                    .dataset(getString(metadata, "dataset"))
+                    .tag(getString(metadata, "tag"))
+                    .description(getString(metadata, "description"))
+                    .charset(StandardCharsets.UTF_8.displayName())
+                    .contentType(getString(fileDescriptor, "contentType"))
+                    .contentLength(bytes.length)
+                    .markCreatedDate();
+
+            // store json mapping
+            metadataContentBuilder
+                    .sourcePath(sourceConfiguration.sourcePath())
+                    .sourceFile(sourceConfiguration.sourceFile())
+                    .sourceCharset(sourceCharset)
+                    .recordType(BufferedRawdataProducer.RecordType.SINGLE.name().toLowerCase());
+
+            for (int j = 0; j < structureArrayNodeRef.get().size(); j++) {
+                JsonNode structureElementNode = structureArrayNodeRef.get().get(j);
+                String name = structureElementNode.get("name").asText();
+                String type = structureElementNode.get("type").asText();
+                metadataContentBuilder.jsonMapping(name, asDataTypeFormat(type));
+            }
+
+            MetadataContent metadataContent = metadataContentBuilder.build();
+
+            CompletableFuture<RawdataMessageBuffer> future = offerMessage(new RawdataMessageBuffer(producer, position, bytes, metadataContent, encryptionClient, secretKey));
+            if (!futures.offer(future)) {
+                commitMessages();
+
+                // re-offer message
+                if (!futures.offer(future)) {
+                    throw new IllegalStateException("Unable to offer future! Out of capacity: " + queueCapacity);
+                }
+            }
+        });
     }
 
     String getString(JsonNode jsonNode, String fieldName) {
@@ -274,7 +303,8 @@ public class KostraWorker implements AutoCloseable {
         public void produce() {
             RawdataMessage.Builder messageBuilder = producer.builder();
             messageBuilder.position(toPosition());
-            messageBuilder.put("manifest.json", JsonParser.createJsonParser().toJSON(metadataContent.getElementNode()).getBytes());
+            byte[] manifestData = JsonParser.createJsonParser().toJSON(metadataContent.getElementNode()).getBytes();
+            messageBuilder.put("manifest.json", tryEncryptContent(manifestData));
             messageBuilder.put("entry", tryEncryptContent(data));
             producer.buffer(messageBuilder);
         }
