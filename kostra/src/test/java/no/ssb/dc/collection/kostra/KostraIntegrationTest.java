@@ -81,7 +81,7 @@ public class KostraIntegrationTest {
                 while ((message = consumer.receive(1, TimeUnit.SECONDS)) != null) {
                     if (counter.incrementAndGet() > 10) break; // stopAt break loop
 
-                    String manifestJsonAsString = new String(message.get("manifest.json"));
+                    String manifestJsonAsString = new String(tryDecryptContent(encryptionClient, secretKey, message.get("manifest.json")));
                     String dataJsonAsString = new String(tryDecryptContent(encryptionClient, secretKey, message.get("entry")));
 
                     JsonNode manifestJsonNode = JsonParser.createJsonParser().fromJson(manifestJsonAsString, JsonNode.class);
