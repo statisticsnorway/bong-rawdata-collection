@@ -247,7 +247,7 @@ public class BufferedRawdataProducer implements AutoCloseable {
             metadataContent.csvMapping(entry.getKey(), entry.getValue().getValue());
         }
 
-        // buffered publisher
+        // buffered publisher - copyMessage() encrypts all data
         RawdataMessage.Builder messageBuilder = rawdataProducer.builder();
         messageBuilder.position(positionRef.get());
         messageBuilder.put("entry", entryData);
