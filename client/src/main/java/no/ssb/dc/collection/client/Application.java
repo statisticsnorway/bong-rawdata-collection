@@ -97,7 +97,7 @@ public class Application implements Runnable {
                     }
                 }),
                 // TODO deprecate custom workers
-                new Command("produce", "kostra-fs", () -> {
+                new Command("produce", "kostra", () -> {
                     try (KostraWorker worker = new KostraWorker(SourceKostraConfiguration.create(overrideConfig), Optional.ofNullable(targetConfiguration).orElseThrow(() -> new RuntimeException("TargetConfiguration was not found!")))) {
                         if (!worker.validate()) {
                             return;
