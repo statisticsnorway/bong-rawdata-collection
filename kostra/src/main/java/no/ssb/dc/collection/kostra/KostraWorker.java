@@ -37,60 +37,33 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-/*
-    kostra stream
-
-    1:
-    key=manifest.json
-        metadata + schema {mapping: art=string, periode=string}
-    key=data
-        {
-            structure: [array],
-            data: [[one-element]]
-        }
-    2:
-        {
-            structure: [array],
-            data: [[one-element]]
-        }
-
-    dataset:
-
-    header   art    periode
-    1        10101  0104
-    2        20101  8104
-*/
-
-
 public class KostraWorker implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(KostraWorker.class);
-    private static AtomicLong publishedMessageCount = new AtomicLong();
+    private static final AtomicLong publishedMessageCount = new AtomicLong();
+    private final JsonParser jsonParser;
     private final SourceKostraConfiguration sourceConfiguration;
-    private final TargetConfiguration targetConfiguration;
     private final FixedThreadPool threadPool;
     private final BufferedReordering<String> bufferedReordering = new BufferedReordering<>();
     private final Queue<CompletableFuture<RawdataMessageBuffer>> futures;
     private final RawdataClient client;
     private final RawdataProducer producer;
     private final int queueCapacity;
-    private final Path sourcePath;
     private final JsonNode specification;
     private final EncryptionClient encryptionClient;
     private final byte[] secretKey;
 
     public KostraWorker(SourceKostraConfiguration sourceConfiguration, TargetConfiguration targetConfiguration) {
+        this.jsonParser = JsonParser.createJsonParser();
         this.sourceConfiguration = sourceConfiguration;
-        this.targetConfiguration = targetConfiguration;
         threadPool = FixedThreadPool.newInstance();
-        client = ProviderConfigurator.configure(targetConfiguration.asMap(), this.targetConfiguration.rawdataClientProvider(), RawdataClientInitializer.class);
-        producer = client.producer(this.targetConfiguration.topic());
-        sourcePath = Paths.get(this.sourceConfiguration.sourcePath());
+        client = ProviderConfigurator.configure(targetConfiguration.asMap(), targetConfiguration.rawdataClientProvider(), RawdataClientInitializer.class);
+        producer = client.producer(targetConfiguration.topic());
         specification = loadSpecification(sourceConfiguration);
-        final char[] encryptionKey = this.targetConfiguration.hasRawdataEncryptionKey() ?
-                this.targetConfiguration.rawdataEncryptionKey().toCharArray() : null;
-        final byte[] encryptionSalt = this.targetConfiguration.hasRawdataEncryptionSalt() ?
-                this.targetConfiguration.rawdataEncryptionSalt().getBytes() : null;
+        final char[] encryptionKey = targetConfiguration.hasRawdataEncryptionKey() ?
+                targetConfiguration.rawdataEncryptionKey().toCharArray() : null;
+        final byte[] encryptionSalt = targetConfiguration.hasRawdataEncryptionSalt() ?
+                targetConfiguration.rawdataEncryptionSalt().getBytes() : null;
         this.encryptionClient = new EncryptionClient();
         if (encryptionKey != null && encryptionKey.length > 0 && encryptionSalt != null && encryptionSalt.length > 0) {
             this.secretKey = encryptionClient.generateSecretKey(encryptionKey, encryptionSalt).getEncoded();
@@ -151,7 +124,6 @@ public class KostraWorker implements AutoCloseable {
     void parse(String charset, Consumer<ArrayNode> structureCallback, Consumer<ArrayNode> dataElementCallback) {
         try {
             Path source = Paths.get(sourceConfiguration.sourcePath()).resolve(sourceConfiguration.sourceFile());
-            JsonParser jsonParser = JsonParser.createJsonParser();
             JsonFactory jsonfactory = new JsonFactory();
             LOG.info("Parse file {} with {} encoding", source.normalize().toAbsolutePath().toString(), Charset.forName(charset));
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(source.toFile()), charset))) {
@@ -185,16 +157,13 @@ public class KostraWorker implements AutoCloseable {
     }
 
     public void produce() {
-        JsonParser jsonParser = JsonParser.createJsonParser();
-
-        AtomicReference<ArrayNode> structureArrayNodeRef = new AtomicReference<>();
-
-        // produce manifest json
         JsonNode metadata = specification.withArray("metadata");
         JsonNode fileDescriptor = specification.withArray("fileDescriptor");
         String sourceCharset = getString(fileDescriptor, "charset");
 
         AtomicLong positionRef = new AtomicLong(0);
+        AtomicReference<ArrayNode> structureArrayNodeRef = new AtomicReference<>();
+
         parse(sourceCharset, structureArrayNodeRef::set, dataElementArrayNode -> {
             String position = String.valueOf(positionRef.incrementAndGet());
 
@@ -205,8 +174,11 @@ public class KostraWorker implements AutoCloseable {
             targetDataArrayNode.add(dataElementArrayNode);
             targetElementDocument.set("data", targetDataArrayNode);
             byte[] bytes = jsonParser.toJSON(targetElementDocument).getBytes();
-            LOG.trace("{}:\n{}", positionRef.get(), jsonParser.toPrettyJSON(targetElementDocument));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:\n{}", positionRef.get(), jsonParser.toPrettyJSON(targetElementDocument));
+            }
 
+            // produce manifest json
             MetadataContent.Builder metadataContentBuilder = new MetadataContent.Builder()
                     .topic(producer.topic())
                     .position(position)
@@ -237,7 +209,8 @@ public class KostraWorker implements AutoCloseable {
 
             MetadataContent metadataContent = metadataContentBuilder.build();
 
-            CompletableFuture<RawdataMessageBuffer> future = offerMessage(new RawdataMessageBuffer(producer, position, bytes, metadataContent, encryptionClient, secretKey));
+            // async buffer message
+            CompletableFuture<RawdataMessageBuffer> future = offerMessage(new RawdataMessageBuffer(jsonParser, producer, position, bytes, metadataContent, encryptionClient, secretKey));
             if (!futures.offer(future)) {
                 commitMessages();
 
@@ -271,6 +244,7 @@ public class KostraWorker implements AutoCloseable {
     }
 
     public static class RawdataMessageBuffer {
+        private final JsonParser jsonParser;
         private final RawdataProducer producer;
         private final String position;
         private final byte[] data;
@@ -278,11 +252,12 @@ public class KostraWorker implements AutoCloseable {
         private final byte[] secretKey;
         private final MetadataContent metadataContent;
 
-        public RawdataMessageBuffer(RawdataProducer producer, String position, byte[] data, MetadataContent manifest) {
-            this(producer, position, data, manifest, null, null);
+        public RawdataMessageBuffer(JsonParser jsonParser, RawdataProducer producer, String position, byte[] data, MetadataContent manifest) {
+            this(jsonParser, producer, position, data, manifest, null, null);
         }
 
-        public RawdataMessageBuffer(RawdataProducer producer, String position, byte[] data, MetadataContent metadataContent, EncryptionClient encryptionClient, byte[] secretKey) {
+        public RawdataMessageBuffer(JsonParser jsonParser, RawdataProducer producer, String position, byte[] data, MetadataContent metadataContent, EncryptionClient encryptionClient, byte[] secretKey) {
+            this.jsonParser = jsonParser;
             this.metadataContent = metadataContent;
             Objects.requireNonNull(data);
             this.position = position;
@@ -303,7 +278,7 @@ public class KostraWorker implements AutoCloseable {
         public void produce() {
             RawdataMessage.Builder messageBuilder = producer.builder();
             messageBuilder.position(toPosition());
-            byte[] manifestData = JsonParser.createJsonParser().toJSON(metadataContent.getElementNode()).getBytes();
+            byte[] manifestData = jsonParser.toJSON(metadataContent.getElementNode()).getBytes();
             messageBuilder.put("manifest.json", tryEncryptContent(manifestData));
             messageBuilder.put("entry", tryEncryptContent(data));
             producer.buffer(messageBuilder);
