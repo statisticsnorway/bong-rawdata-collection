@@ -1,8 +1,8 @@
 package no.ssb.dc.collection.bong.rema;
 
-import no.ssb.dc.collection.api.config.TargetConfiguration;
-import no.ssb.dc.collection.api.utils.FixedThreadPool;
-import no.ssb.dc.collection.api.worker.ULIDGenerator;
+import no.ssb.dc.migration.rawdata.onprem.config.TargetConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.utils.FixedThreadPool;
+import no.ssb.dc.migration.rawdata.onprem.worker.ULIDGenerator;
 import no.ssb.rawdata.api.RawdataClient;
 import no.ssb.rawdata.api.RawdataClientInitializer;
 import no.ssb.rawdata.api.RawdataMessage;

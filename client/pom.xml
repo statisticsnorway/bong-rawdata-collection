@@ -22,9 +22,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>no.ssb.dc.rawdata</groupId>
-            <artifactId>rawdata-collection-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>no.ssb.dc.migration</groupId>
+            <artifactId>dapla-migration-rawdata-onprem</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -194,7 +194,7 @@
                                 ${argLine}
                                 --enable-preview
                                 --illegal-access=deny
-                                --add-opens=java.base/java.lang.invoke=rawdata.collection.api
+                                --add-opens=java.base/java.lang.invoke=no.ssb.rawdata.migration.onprem
                                 --add-opens=java.base/java.nio=lmdbjava
                                 --add-exports=java.base/sun.nio.ch=lmdbjava
                                 --add-opens=rawdata.collection.client/no.ssb.dc.collection.client=ALL-UNNAMED
@@ -243,7 +243,7 @@
                     <argLine>
                         --enable-preview
                         --illegal-access=deny
-                        --add-opens=java.base/java.lang.invoke=rawdata.collection.api
+                        --add-opens=java.base/java.lang.invoke=no.ssb.rawdata.migration.onprem
                         --add-opens=java.base/java.nio=lmdbjava
                         --add-exports=java.base/sun.nio.ch=lmdbjava
                         --add-opens=rawdata.collection.client/no.ssb.dc.collection.client=ALL-UNNAMED

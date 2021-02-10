@@ -48,7 +48,7 @@
     </scm>
 
     <modules>
-<!--        <module>dapla-migration-rawdata</module>-->
+        <module>dapla-migration-rawdata-onprem</module>
         <module>bong</module>
         <module>client</module>
         <module>kostra</module>

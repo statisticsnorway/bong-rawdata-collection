@@ -1,7 +1,7 @@
 module rawdata.collection.client {
 
     requires no.ssb.config;
-    requires rawdata.collection.api;
+    requires no.ssb.rawdata.migration.onprem;
     requires rawdata.collection.bong;
     requires rawdata.collection.kostra;
 
@@ -17,7 +17,7 @@ module rawdata.collection.client {
 
     requires org.slf4j;
 
-    opens no.ssb.dc.collection.client to rawdata.collection.api;
+    opens no.ssb.dc.collection.client to no.ssb.rawdata.migration.onprem;
 
     exports no.ssb.dc.collection.client;
 

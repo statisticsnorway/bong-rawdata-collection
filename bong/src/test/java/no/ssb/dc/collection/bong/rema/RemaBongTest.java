@@ -1,8 +1,8 @@
 package no.ssb.dc.collection.bong.rema;
 
 import de.huxhorn.sulky.ulid.ULID;
-import no.ssb.dc.collection.api.config.LocalFileSystemConfiguration;
-import no.ssb.dc.collection.api.worker.ULIDGenerator;
+import no.ssb.dc.migration.rawdata.onprem.config.LocalFileSystemConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.worker.ULIDGenerator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

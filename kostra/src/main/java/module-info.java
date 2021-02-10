@@ -12,7 +12,7 @@ module rawdata.collection.kostra {
     requires lmdbjava;
     requires org.objectweb.asm;
 
-    requires rawdata.collection.api;
+    requires no.ssb.rawdata.migration.onprem;
     requires no.ssb.rawdata.encryption; // used in test
 
     requires java.sql;

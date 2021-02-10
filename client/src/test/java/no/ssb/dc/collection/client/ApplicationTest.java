@@ -1,6 +1,6 @@
 package no.ssb.dc.collection.client;
 
-import no.ssb.dc.collection.api.config.BootstrapConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.BootstrapConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

@@ -1,20 +1,20 @@
 package no.ssb.dc.collection.client;
 
-import no.ssb.dc.collection.api.config.BootstrapConfiguration;
-import no.ssb.dc.collection.api.config.GCSConfiguration;
-import no.ssb.dc.collection.api.config.LocalFileSystemConfiguration;
-import no.ssb.dc.collection.api.config.SourceLmdbConfiguration;
-import no.ssb.dc.collection.api.config.SourceNoDbConfiguration;
-import no.ssb.dc.collection.api.config.SourcePostgresConfiguration;
-import no.ssb.dc.collection.api.config.TargetConfiguration;
-import no.ssb.dc.collection.api.target.RawdataGCSTestWrite;
-import no.ssb.dc.collection.api.worker.CsvDynamicWorker;
-import no.ssb.dc.collection.api.worker.CsvSpecification;
-import no.ssb.dc.collection.api.worker.SpecificationDeserializer;
 import no.ssb.dc.collection.bong.rema.RemaBongWorker;
 import no.ssb.dc.collection.bong.rema.SourceRemaConfiguration;
 import no.ssb.dc.collection.kostra.KostraWorker;
 import no.ssb.dc.collection.kostra.SourceKostraConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.BootstrapConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.GCSConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.LocalFileSystemConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.SourceLmdbConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.SourceNoDbConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.SourcePostgresConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.config.TargetConfiguration;
+import no.ssb.dc.migration.rawdata.onprem.target.RawdataGCSTestWrite;
+import no.ssb.dc.migration.rawdata.onprem.worker.CsvDynamicWorker;
+import no.ssb.dc.migration.rawdata.onprem.worker.CsvSpecification;
+import no.ssb.dc.migration.rawdata.onprem.worker.SpecificationDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
