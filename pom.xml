@@ -48,7 +48,7 @@
     </scm>
 
     <modules>
-        <module>api</module>
+        <module>dapla-migration-rawdata</module>
         <module>bong</module>
         <module>client</module>
         <module>kostra</module>

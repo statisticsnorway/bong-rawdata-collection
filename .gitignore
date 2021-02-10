@@ -33,6 +33,7 @@ hs_err_pid*
 
 **/export/
 
+/dapla-migration-rawdata
 /dapla-rawdata-migration
 
 **/application-secret.properties
