@@ -2,7 +2,7 @@
 set -e
 
 JPMS_SWITCHES="
-  --add-opens=java.base/java.lang.invoke=rawdata.collection.api
+  --add-opens=java.base/java.lang.invoke=no.ssb.rawdata.migration.onprem
   --add-opens java.base/java.nio=lmdbjava
   --add-exports java.base/sun.nio.ch=lmdbjava
 "
