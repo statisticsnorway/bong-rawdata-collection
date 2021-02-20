@@ -1,12 +1,12 @@
 package no.ssb.dc.collection.kostra;
 
-import no.ssb.dc.migration.rawdata.onprem.config.BaseConfiguration;
-import no.ssb.dc.migration.rawdata.onprem.config.ConfigurationFactory;
-import no.ssb.dc.migration.rawdata.onprem.config.EnvironmentPrefix;
-import no.ssb.dc.migration.rawdata.onprem.config.Name;
-import no.ssb.dc.migration.rawdata.onprem.config.Namespace;
-import no.ssb.dc.migration.rawdata.onprem.config.Property;
-import no.ssb.dc.migration.rawdata.onprem.config.RequiredKeys;
+import no.ssb.dapla.migration.rawdata.onprem.config.BaseConfiguration;
+import no.ssb.dapla.migration.rawdata.onprem.config.ConfigurationFactory;
+import no.ssb.dapla.migration.rawdata.onprem.config.EnvironmentPrefix;
+import no.ssb.dapla.migration.rawdata.onprem.config.Name;
+import no.ssb.dapla.migration.rawdata.onprem.config.Namespace;
+import no.ssb.dapla.migration.rawdata.onprem.config.Property;
+import no.ssb.dapla.migration.rawdata.onprem.config.RequiredKeys;
 
 import java.util.Map;
 
