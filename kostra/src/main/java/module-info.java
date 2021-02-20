@@ -24,6 +24,7 @@ module rawdata.collection.kostra {
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.annotation;
+    requires jackson.jq;
 
     opens no.ssb.dc.collection.kostra to com.fasterxml.jackson.databind;
 
